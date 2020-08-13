@@ -2,5 +2,5 @@ __pycache__/
 .vscode/
 *.cfg
 *.DS_Store
-__init__.py
 .idea
+test*

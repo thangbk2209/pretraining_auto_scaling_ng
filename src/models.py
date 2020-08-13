@@ -90,7 +90,7 @@ class LSTMAutoEncoder(object):
         keras.utils.plot_model(self.model, show_shapes=True, to_file=os.path.join(save_dir, 'auto_encoder.png'))
 
 
-class PredictionNet(object):
+class MLPNet(object):
     def __init__(self,
                  input_shape,
                  hidden_layer_units=[128, 64, 16],
@@ -119,7 +119,7 @@ class PredictionNet(object):
         return mlp
 
     def plot_model(self, save_dir):
-        keras.utils.plot_model(self.model, show_shapes=True, to_file=os.path.join(save_dir, 'Prediction Net.png'))
+        keras.utils.plot_model(self.model, show_shapes=True, to_file=os.path.join(save_dir, 'MLP Net.png'))
 
 
 if __name__ == '__main__':
@@ -137,8 +137,8 @@ if __name__ == '__main__':
     # model.summary()
     # model.plot_model(save_dir)
 
-    pred_net = PredictionNet(input_shape=32,
-                             hidden_layer_units=[128, 64, 16],
-                             drop_out=.3,
-                             hidden_activation='relu')
+    pred_net = MLPNet(input_shape=32,
+                      hidden_layer_units=[128, 64, 16],
+                      drop_out=.3,
+                      hidden_activation='relu')
     pred_net.plot_model(save_dir)

@@ -26,6 +26,7 @@ meanCPUUsage, canonical_memory_usage = 3, 4
 
 df2 = df.iloc[:, [3, 4]]
 df2 = (df2 - df2.min()) / (df2.max() - df2.min())
+
 df2.plot(linewidth=0.5, figsize=(25, 10))
 plt.show()
 
