@@ -6,7 +6,9 @@ CORE_DATA_DIR = os.path.join(PROJECT_DIR, 'data')
 
 class Config:
     PLOT_MODELS_DIR = os.path.join(CORE_DATA_DIR, 'plot_models')
+    PLOT_PRED_TRUE_DIR = os.path.join(CORE_DATA_DIR, 'plot_pred_true')
     MODELS_DIR = os.path.join(CORE_DATA_DIR, 'models')
+    LOG_DIR = os.path.join(CORE_DATA_DIR, 'logs')
     DATA_FILE = os.path.join(CORE_DATA_DIR, 'input_data', 'google_trace', 'all_jobs', '5_mins.csv')
     INPUT_COLS, PREDICT_COLS = [0], [0]
     LEARNING_RATE = 3e-4
@@ -29,7 +31,7 @@ class Config:
         'batch_size': 256,
         'optimizer': 'adam',
         'loss': 'mse',
-        'epochs': 20
+        'epochs': 2
     }
 
     MLP_CONFIG = {
@@ -39,5 +41,5 @@ class Config:
         'batch_size': 256,
         'optimizer': 'adam',
         'loss': 'mse',
-        'epochs': 20
+        'epochs': 2
     }

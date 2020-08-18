@@ -1,9 +1,16 @@
 from pandas import read_csv
+import os
 from tensorflow.keras.models import Sequential
+from tensorflow.keras.callbacks import TensorBoard
 from src.models import LSTMAutoEncoder, MLPNet
 from src.preprocessing import Data
 import matplotlib.pyplot as plt
+import time
 from config import *
+
+run_id = time.strftime('%Y_%m_%d-%H_%M_%S')
+AE_LOG_DIR = os.path.join(Config.LOG_DIR, 'autoencoder', run_id)
+MLP_LOG_DIR = os.path.join(Config.LOG_DIR, 'mlp', run_id)
 
 
 def train_autoencoder(X_train, y_train, X_val, y_val, X_test, y_test):
@@ -23,13 +30,14 @@ def train_autoencoder(X_train, y_train, X_val, y_val, X_test, y_test):
         optimizer=Config.AE_CONFIG['optimizer'],
         loss=Config.AE_CONFIG['loss']
     )
-
+    tensorboard_cb = TensorBoard(AE_LOG_DIR)
     history = autoencoder.model.fit(
         X_train, y_train,
         validation_data=(X_val, y_val),
         batch_size=Config.AE_CONFIG['batch_size'],
         epochs=Config.AE_CONFIG['epochs'],
-        verbose=Config.VERBOSE
+        verbose=Config.VERBOSE,
+        callbacks=[tensorboard_cb]
     )
     print(f'mse test: {autoencoder.model.evaluate(X_test, y_test)}')
     print(f'y_test[1]: \n{y_test[1]}')
@@ -56,12 +64,14 @@ def train_mlp(encoder, X_train, y_train, X_val, y_val, X_test, y_test, plot_pred
         loss=Config.MLP_CONFIG['loss'],
     )
 
+    tensorboard_cb = TensorBoard(MLP_LOG_DIR)
     model.fit(
         X_train, y_train,
         validation_data=(X_val, y_val),
         batch_size=Config.MLP_CONFIG['batch_size'],
         epochs=Config.MLP_CONFIG['epochs'],
-        verbose=Config.VERBOSE
+        verbose=Config.VERBOSE,
+        callbacks=[tensorboard_cb]
     )
 
     model.summary()
@@ -71,7 +81,7 @@ def train_mlp(encoder, X_train, y_train, X_val, y_val, X_test, y_test, plot_pred
     plt.plot(y_test.reshape(y_test.shape[0]))
     plt.plot(y_ped.reshape(y_test.shape[0]))
     plt.legend(['True', 'Prediction'])
-    plt.show()
+    plt.savefig(os.path.join(Config.PLOT_PRED_TRUE_DIR, 'true_pred.png'))
 
     print('saving models')
     model.save(os.path.join(Config.MODELS_DIR, 'global_model.h5'))
