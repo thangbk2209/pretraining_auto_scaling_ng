@@ -1,16 +1,12 @@
 from pandas import read_csv
 import os
+import shutil
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.callbacks import TensorBoard
+from tensorflow.keras.callbacks import TensorBoard, EarlyStopping
 from src.models import LSTMAutoEncoder, MLPNet
 from src.preprocessing import Data
 import matplotlib.pyplot as plt
-import time
 from config import *
-
-run_id = time.strftime('%Y_%m_%d-%H_%M_%S')
-AE_LOG_DIR = os.path.join(Config.LOG_DIR, 'autoencoder', run_id)
-MLP_LOG_DIR = os.path.join(Config.LOG_DIR, 'mlp', run_id)
 
 
 def train_autoencoder(X_train, y_train, X_val, y_val, X_test, y_test):
@@ -25,28 +21,30 @@ def train_autoencoder(X_train, y_train, X_val, y_val, X_test, y_test):
         recurrent_activation=Config.AE_CONFIG['recurrent_activation']
     )
     autoencoder.summary()
-    autoencoder.plot_model(save_dir=Config.PLOT_MODELS_DIR)
+    # autoencoder.plot_model(save_dir=os.path.join(PLOT_MODELS_DIR, 'autoencoder.png'))
     autoencoder.model.compile(
         optimizer=Config.AE_CONFIG['optimizer'],
         loss=Config.AE_CONFIG['loss']
     )
+
     tensorboard_cb = TensorBoard(AE_LOG_DIR)
+    early_stopping_cb = EarlyStopping(patience=Config.PATIENCE, restore_best_weights=True)
     history = autoencoder.model.fit(
         X_train, y_train,
         validation_data=(X_val, y_val),
         batch_size=Config.AE_CONFIG['batch_size'],
         epochs=Config.AE_CONFIG['epochs'],
         verbose=Config.VERBOSE,
-        callbacks=[tensorboard_cb]
+        callbacks=[tensorboard_cb, early_stopping_cb]
     )
     print(f'mse test: {autoencoder.model.evaluate(X_test, y_test)}')
     print(f'y_test[1]: \n{y_test[1]}')
     print(f'y_ped[1]: \n{autoencoder.model.predict(X_test[1:2])}')
 
     print('saving models')
-    autoencoder.model.save(filepath=os.path.join(Config.MODELS_DIR, 'autoencoder.h5'))
-    autoencoder.encoder.save(filepath=os.path.join(Config.MODELS_DIR, 'encoder.h5'))
-    print(f'saved to {Config.MODELS_DIR}')
+    autoencoder.model.save(filepath=os.path.join(MODELS_DIR, 'autoencoder.h5'))
+    autoencoder.encoder.save(filepath=os.path.join(MODELS_DIR, 'encoder.h5'))
+    print(f'saved to {MODELS_DIR}')
     return autoencoder
 
 
@@ -65,36 +63,52 @@ def train_mlp(encoder, X_train, y_train, X_val, y_val, X_test, y_test, plot_pred
     )
 
     tensorboard_cb = TensorBoard(MLP_LOG_DIR)
+    early_stopping_cb = EarlyStopping(patience=Config.PATIENCE, restore_best_weights=True)
     model.fit(
         X_train, y_train,
         validation_data=(X_val, y_val),
         batch_size=Config.MLP_CONFIG['batch_size'],
         epochs=Config.MLP_CONFIG['epochs'],
         verbose=Config.VERBOSE,
-        callbacks=[tensorboard_cb]
+        callbacks=[tensorboard_cb, early_stopping_cb]
     )
 
     model.summary()
 
-    print(f'mse test: {model.evaluate(X_test, y_test)}')
+    test_err = model.evaluate(X_test, y_test)
+    print('mse test: {:06.4f}'.format(test_err))
+
     y_ped = model.predict(X_test)
     plt.plot(y_test.reshape(y_test.shape[0]))
     plt.plot(y_ped.reshape(y_test.shape[0]))
+    plt.title('Test err={:06.2f}'.format(test_err))
     plt.legend(['True', 'Prediction'])
-    plt.savefig(os.path.join(Config.PLOT_PRED_TRUE_DIR, 'true_pred.png'))
+    plt.savefig(os.path.join(PLOT_PRED_TRUE_DIR, f'true_pred_{RUN_ID}.png'))
 
     print('saving models')
-    model.save(os.path.join(Config.MODELS_DIR, 'global_model.h5'))
-    mlp_net.model.save(os.path.join(Config.MODELS_DIR, 'mlp_net.h5'))
-    print(f'saved to {Config.MODELS_DIR}')
+    model.save(os.path.join(MODELS_DIR, 'global_model.h5'))
+    mlp_net.model.save(os.path.join(MODELS_DIR, 'mlp_net.h5'))
+    print(f'saved to {MODELS_DIR}')
     return mlp_net
 
 
 def run():
+    # save config.py
+    try:
+        shutil.copy(os.path.join(PROJECT_DIR, 'config.py'), os.path.join(CONFIGS_DIR, f'config_{RUN_ID}.py'))
+    except Exception as e:
+        print(e)
+
+    # create models directory
+    try:
+        os.mkdir(MODELS_DIR)
+    except Exception as e:
+        print(e)
+
     # load data
-    data_frame = read_csv(Config.DATA_FILE)
-    data = data_frame.iloc[:, Config.INPUT_COLS].values
-    if len(Config.INPUT_COLS) == 1:
+    data_frame = read_csv(DATA_FILE, header=CSV_HEADER)
+    data = data_frame.iloc[:, INPUT_COLS].values
+    if len(INPUT_COLS) == 1:
         data = data.reshape([data.shape[0], 1])
 
     # create data object
@@ -102,7 +116,7 @@ def run():
 
     print('Training AutoEncoder: ')
     # data for autoencoder
-    input_cols = [i for i in range(len(Config.INPUT_COLS))]
+    input_cols = [i for i in range(len(INPUT_COLS))]
     X_train, y_train = data_obj.create_dataset(
         type_dataset='train',
         input_time_steps=Config.INPUT_TIME_STEPS, predict_time_steps=Config.AE_CONFIG['time_steps_decoder'],
@@ -122,11 +136,11 @@ def run():
 
     # data for global model
     print('Training global model: ')
-    input_cols = [i for i in range(len(Config.INPUT_COLS))]
+    input_cols = [i for i in range(len(INPUT_COLS))]
     predict_cols = []
-    for it in Config.PREDICT_COLS:
-        for i in range(len(Config.INPUT_COLS)):
-            if it == Config.INPUT_COLS[i]:
+    for it in PREDICT_COLS:
+        for i in range(len(INPUT_COLS)):
+            if it == INPUT_COLS[i]:
                 predict_cols.append(i)
     X_train, y_train = data_obj.create_dataset(
         type_dataset='train',
@@ -146,8 +160,6 @@ def run():
     mlp_net = train_mlp(autoencoder.encoder, X_train, y_train, X_val, y_val, X_test, y_test)
 
 
-if __name__ == '__main__':
-    run()
 
 
 
