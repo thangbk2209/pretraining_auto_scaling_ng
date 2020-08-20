@@ -41,7 +41,7 @@ class Config:
         'batch_size': 256,
         'optimizer': 'adam',
         'loss': 'mse',
-        'epochs': 100
+        'epochs': 1
     }
 
     MLP_CONFIG = {
@@ -51,5 +51,5 @@ class Config:
         'batch_size': 256,
         'optimizer': 'adam',
         'loss': 'mse',
-        'epochs': 100
+        'epochs': 1
     }
