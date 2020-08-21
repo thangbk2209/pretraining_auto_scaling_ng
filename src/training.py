@@ -79,11 +79,31 @@ def train_mlp(encoder, X_train, y_train, X_val, y_val, X_test, y_test, plot_pred
     print('mse test: {:06.4f}'.format(test_err))
 
     y_ped = model.predict(X_test)
-    plt.plot(y_test.reshape(y_test.shape[0]))
-    plt.plot(y_ped.reshape(y_test.shape[0]))
-    plt.title('Test err={:06.2f}'.format(test_err))
+
+    # plot test:
+    # all
+    plt.figure(figsize=(25, 10), linewidth=0.2)
+    plt.plot(y_test.reshape(-1))
+    plt.plot(y_ped.reshape(-1))
+    plt.title('Test rmse={:06.2f}, ['.format(test_err))
     plt.legend(['True', 'Prediction'])
-    plt.savefig(os.path.join(PLOT_PRED_TRUE_DIR, f'true_pred_{RUN_ID}.png'))
+    plt.savefig(os.path.join(PLOT_PRED_TRUE_DIR, f'true_pred_{RUN_ID}_all.png'))
+
+    # [:100]
+    plt.figure(figsize=(25, 10), linewidth=0.2)
+    plt.plot(y_test.reshape(-1)[-100:])
+    plt.plot(y_ped.reshape(-1)[-100:])
+    plt.title('Test rmse={:06.2f}, [100:]'.format(test_err))
+    plt.legend(['True', 'Prediction'])
+    plt.savefig(os.path.join(PLOT_PRED_TRUE_DIR, f'true_pred_{RUN_ID}_100first.png'))
+
+    # [-100:]
+    plt.figure(figsize=(25, 10), linewidth=0.2)
+    plt.plot(y_test.reshape(-1)[-100:])
+    plt.plot(y_ped.reshape(-1)[-100:])
+    plt.title('Test rmse={:06.2f}, [-100:]'.format(test_err))
+    plt.legend(['True', 'Prediction'])
+    plt.savefig(os.path.join(PLOT_PRED_TRUE_DIR, f'true_pred_{RUN_ID}_100last.png'))
 
     print('saving models')
     model.save(os.path.join(MODELS_DIR, 'global_model.h5'))
@@ -109,10 +129,10 @@ def run():
     data_frame = read_csv(DATA_FILE, header=CSV_HEADER)
     data = data_frame.iloc[:, INPUT_COLS].values
     if len(INPUT_COLS) == 1:
-        data = data.reshape([data.shape[0], 1])
+        data = data.reshape(-1, 1)
 
     # create data object
-    data_obj = Data(data=data, split_ratio=Config.SPLIT_RATIO, scaler=Config.SCALER)
+    data_obj = Data(data=data, split_ratio=Config.SPLIT_RATIO, interval_diff=Config.INTERVAL_DIFF)
 
     print('Training AutoEncoder: ')
     # data for autoencoder
