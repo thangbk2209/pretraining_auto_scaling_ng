@@ -3,3 +3,5 @@ __pycache__/
 *.cfg
 *.DS_Store
 __init__.py
+.idea
+test*
