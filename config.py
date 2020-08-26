@@ -16,7 +16,7 @@ MLP_LOG_DIR = os.path.join(LOG_DIR, 'mlp', RUN_ID)
 CONFIGS_DIR = os.path.join(CORE_DATA_DIR, 'configs')
 DATA_FILE = os.path.join(CORE_DATA_DIR, 'input_data', 'google_trace', '1_job', '5_mins.csv')
 CSV_HEADER = None
-INPUT_COLS, PREDICT_COLS = [3], [3]
+INPUT_COLS = [3]
 
 
 class Config:
