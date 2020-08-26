@@ -1,6 +1,7 @@
 from pandas import read_csv
 import os
 import shutil
+import numpy as np
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.callbacks import TensorBoard, EarlyStopping
 from src.models import LSTMAutoEncoder, MLPNet
@@ -48,7 +49,7 @@ def train_autoencoder(X_train, y_train, X_val, y_val, X_test, y_test):
     return autoencoder
 
 
-def train_mlp(encoder, X_train, y_train, X_val, y_val, X_test, y_test, plot_predictions=False):
+def train_mlp(encoder, X_train, y_train, X_val, y_val, X_test, y_test):
     mlp_net = MLPNet(
         input_shape=encoder.output_shape[1],
         hidden_layer_units=Config.MLP_CONFIG['hidden_layer_units'],
@@ -74,42 +75,12 @@ def train_mlp(encoder, X_train, y_train, X_val, y_val, X_test, y_test, plot_pred
     )
 
     model.summary()
-
-    test_err = model.evaluate(X_test, y_test)
-    print('mse test: {:06.4f}'.format(test_err))
-
-    y_ped = model.predict(X_test)
-
-    # plot test:
-    # all
-    plt.figure(figsize=(25, 10), linewidth=0.2)
-    plt.plot(y_test.reshape(-1))
-    plt.plot(y_ped.reshape(-1))
-    plt.title('Test rmse={:06.2f}, ['.format(test_err))
-    plt.legend(['True', 'Prediction'])
-    plt.savefig(os.path.join(PLOT_PRED_TRUE_DIR, f'true_pred_{RUN_ID}_all.png'))
-
-    # [:100]
-    plt.figure(figsize=(25, 10), linewidth=0.2)
-    plt.plot(y_test.reshape(-1)[-100:])
-    plt.plot(y_ped.reshape(-1)[-100:])
-    plt.title('Test rmse={:06.2f}, [100:]'.format(test_err))
-    plt.legend(['True', 'Prediction'])
-    plt.savefig(os.path.join(PLOT_PRED_TRUE_DIR, f'true_pred_{RUN_ID}_100first.png'))
-
-    # [-100:]
-    plt.figure(figsize=(25, 10), linewidth=0.2)
-    plt.plot(y_test.reshape(-1)[-100:])
-    plt.plot(y_ped.reshape(-1)[-100:])
-    plt.title('Test rmse={:06.2f}, [-100:]'.format(test_err))
-    plt.legend(['True', 'Prediction'])
-    plt.savefig(os.path.join(PLOT_PRED_TRUE_DIR, f'true_pred_{RUN_ID}_100last.png'))
-
     print('saving models')
     model.save(os.path.join(MODELS_DIR, 'global_model.h5'))
     mlp_net.model.save(os.path.join(MODELS_DIR, 'mlp_net.h5'))
     print(f'saved to {MODELS_DIR}')
-    return mlp_net
+
+    return model
 
 
 def run():
@@ -177,7 +148,44 @@ def run():
     print('dataset shape:')
     print(X_train.shape, y_train.shape, X_val.shape, y_val.shape, X_test.shape, y_test.shape)
 
-    mlp_net = train_mlp(autoencoder.encoder, X_train, y_train, X_val, y_val, X_test, y_test)
+    # train mlp
+    global_model = train_mlp(autoencoder.encoder, X_train, y_train, X_val, y_val, X_test, y_test)
+
+    test_err = global_model.evaluate(X_test, y_test)
+    print('mse test: {:.4f}'.format(test_err))
+    print('rmse test: {:.4f}'.format(np.sqrt(test_err)))
+
+    y_ped = global_model.predict(X_test)
+    y_pred_invert = data_obj.invert_transform(data_obj.data_test, y_ped.reshape(-1, 1), Config.INPUT_TIME_STEPS)
+    y_test_invert = data_obj.invert_transform(data_obj.data_test, y_test.reshape(-1, 1), Config.INPUT_TIME_STEPS)
+
+    print('rmse test after rescaling: {:.4f}'.format(np.sqrt((y_pred_invert - y_test_invert) ** 2).mean()))
+    # plot test:
+    # all
+    plt.figure(figsize=(25, 10), linewidth=0.2)
+    plt.plot(y_test_invert.reshape(-1))
+    plt.plot(y_pred_invert.reshape(-1))
+    plt.title('Test mse={:06.2f}'.format(test_err))
+    plt.legend(['True', 'Prediction'])
+    plt.savefig(os.path.join(PLOT_PRED_TRUE_DIR, f'true_pred_{RUN_ID}_all.png'))
+
+    # [:100]
+    plt.figure(figsize=(25, 10), linewidth=0.2)
+    plt.plot(y_test_invert.reshape(-1)[:100])
+    plt.plot(y_pred_invert.reshape(-1)[:100])
+    plt.title('Test mse={:06.2f}, [100:]'.format(test_err))
+    plt.legend(['True', 'Prediction'])
+    plt.savefig(os.path.join(PLOT_PRED_TRUE_DIR, f'true_pred_{RUN_ID}_100first.png'))
+
+    # [-100:]
+    plt.figure(figsize=(25, 10), linewidth=0.2)
+    plt.plot(y_test_invert.reshape(-1)[-100:])
+    plt.plot(y_pred_invert.reshape(-1)[-100:])
+    plt.title('Test mse={:06.2f}, [-100:]'.format(test_err))
+    plt.legend(['True', 'Prediction'])
+    plt.savefig(os.path.join(PLOT_PRED_TRUE_DIR, f'true_pred_{RUN_ID}_100last.png'))
+
+
 
 
 

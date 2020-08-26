@@ -12,7 +12,7 @@ class LSTMAutoEncoder(object):
     def __init__(self,
                  input_shape=None,  # (time_steps, features)
                  layer_units_encoder=[128, 32],
-                 layer_units_decoder=[32, 128],
+                 layer_units_decoder=[128, 32],
                  timesteps_decoder=5,
                  drop_out=.0,
                  recurrent_drop_out=.0,

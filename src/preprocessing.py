@@ -29,6 +29,7 @@ class Data(object):
             diff.append(v)
         return np.array(diff)
 
+
     @staticmethod
     def log_transform(data):
         data = data
@@ -57,6 +58,17 @@ class Data(object):
         data = self.difference(data, self.interval_diff)
         data = self.standard_scaler.transform(data)
         data = self.minmax_scaler.transform(data)
+        return data
+
+    # return data predict, none transformed
+    # data_shape: (samples, features)
+    def invert_transform(self, data_true_none_transformed, data_predict_tranformed, input_time_steps):
+        data = self.minmax_scaler.inverse_transform(data_predict_tranformed)
+        data = self.standard_scaler.inverse_transform(data)
+        # invert diff
+        data = data + np.log(data_true_none_transformed)[input_time_steps:-self.interval_diff]
+        # invert log
+        data = np.exp(data)
         return data
 
     def create_dataset(

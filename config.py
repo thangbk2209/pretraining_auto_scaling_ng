@@ -22,7 +22,7 @@ INPUT_COLS, PREDICT_COLS = [3], [3]
 class Config:
     LEARNING_RATE = 3e-4
     SPLIT_RATIO = (0.7, 0.1, 0.2)
-    INPUT_TIME_STEPS = 20
+    INPUT_TIME_STEPS = 32
     PREDICT_TIME_STEPS = 1
     FEATURES = len(INPUT_COLS)
     VERBOSE = 2
@@ -30,14 +30,14 @@ class Config:
     PATIENCE = 10
 
     AE_CONFIG = {
-        'layer_units_encoder': [128, 64],
-        'layer_units_decoder': [128, 64],
+        'layer_units_encoder': [64, 32],
+        'layer_units_decoder': [64, 32],
         'time_steps_decoder': 5,
         'drop_out': 0.2,
-        'recurrent_drop_out': 0.2,
+        'recurrent_drop_out': 0.1,
         'activation': 'tanh',
         'recurrent_activation': 'sigmoid',
-        'batch_size': 256,
+        'batch_size': 512,
         'optimizer': 'adam',
         'loss': 'mse',
         'epochs': 1
@@ -46,9 +46,10 @@ class Config:
     MLP_CONFIG = {
         'hidden_layer_units': [128, 64, 16],
         'drop_out': 0.2,
-        'hidden_activation': 'relu',
-        'batch_size': 256,
+        'hidden_activation': 'tanh',
+        'batch_size': 512,
         'optimizer': 'adam',
         'loss': 'mse',
         'epochs': 1
+        
     }
