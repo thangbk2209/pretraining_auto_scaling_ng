@@ -62,11 +62,11 @@ class Data(object):
 
     # return data predict, none transformed
     # data_shape: (samples, features)
-    def invert_transform(self, data_true_none_transformed, data_predict_tranformed, input_time_steps):
+    def invert_transform(self, data_predict_tranformed):
         data = self.minmax_scaler.inverse_transform(data_predict_tranformed)
         data = self.standard_scaler.inverse_transform(data)
         # invert diff
-        data = data + np.log(data_true_none_transformed)[input_time_steps:-self.interval_diff]
+        # data = data + np.log(data_true_none_transformed)[input_time_steps:-self.interval_diff]
         # invert log
         data = np.exp(data)
         return data

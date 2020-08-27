@@ -31,16 +31,16 @@ class Config:
 
     AE_CONFIG = {
         'layer_units_encoder': [64, 32],
-        'layer_units_decoder': [64, 32],
-        'time_steps_decoder': 5,
+        'layer_units_decoder': [32, 64],
+        'time_steps_decoder': 8,
         'drop_out': 0.2,
-        'recurrent_drop_out': 0.1,
+        'recurrent_drop_out': 0.2,
         'activation': 'tanh',
         'recurrent_activation': 'sigmoid',
         'batch_size': 512,
         'optimizer': 'adam',
         'loss': 'mse',
-        'epochs': 1
+        'epochs': 100
     }
 
     MLP_CONFIG = {
@@ -50,6 +50,6 @@ class Config:
         'batch_size': 512,
         'optimizer': 'adam',
         'loss': 'mse',
-        'epochs': 1
+        'epochs': 100
         
     }

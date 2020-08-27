@@ -143,16 +143,17 @@ def run():
     print('rmse test: {:.4f}'.format(np.sqrt(test_err)))
 
     y_ped = pred_model.predict(X_test)
-    y_pred_invert = data_obj.invert_transform(data_obj.data_test, y_ped.reshape(-1, 1), Config.INPUT_TIME_STEPS)
-    y_test_invert = data_obj.invert_transform(data_obj.data_test, y_test.reshape(-1, 1), Config.INPUT_TIME_STEPS)
+    y_pred_invert = data_obj.invert_transform(y_ped.reshape(-1, 1))
+    y_test_invert = data_obj.invert_transform(y_test.reshape(-1, 1))
 
-    print('rmse test after rescaling: {:.4f}'.format(np.sqrt((y_pred_invert - y_test_invert) ** 2).mean()))
+    rmse_test = np.sqrt(((y_pred_invert - y_test_invert) ** 2).mean())
+    print('rmse test after rescaling: {:.4f}'.format(rmse_test))
     # plot test:
     # all
     plt.figure(figsize=(25, 10), linewidth=0.2)
     plt.plot(y_test_invert.reshape(-1))
     plt.plot(y_pred_invert.reshape(-1))
-    plt.title('Test mse={:06.2f}'.format(test_err))
+    plt.title('Test rmse={:.4f}'.format(rmse_test))
     plt.legend(['True', 'Prediction'])
     plt.savefig(os.path.join(PLOT_PRED_TRUE_DIR, f'true_pred_{RUN_ID}_all.png'))
 
@@ -160,7 +161,7 @@ def run():
     plt.figure(figsize=(25, 10), linewidth=0.2)
     plt.plot(y_test_invert.reshape(-1)[:100])
     plt.plot(y_pred_invert.reshape(-1)[:100])
-    plt.title('Test mse={:06.2f}, [100:]'.format(test_err))
+    plt.title('Test rmse={:.4f}, [100:]'.format(rmse_test))
     plt.legend(['True', 'Prediction'])
     plt.savefig(os.path.join(PLOT_PRED_TRUE_DIR, f'true_pred_{RUN_ID}_100first.png'))
 
@@ -168,7 +169,7 @@ def run():
     plt.figure(figsize=(25, 10), linewidth=0.2)
     plt.plot(y_test_invert.reshape(-1)[-100:])
     plt.plot(y_pred_invert.reshape(-1)[-100:])
-    plt.title('Test mse={:06.2f}, [-100:]'.format(test_err))
+    plt.title('Test rmse={:.4f}, [-100:]'.format(rmse_test))
     plt.legend(['True', 'Prediction'])
     plt.savefig(os.path.join(PLOT_PRED_TRUE_DIR, f'true_pred_{RUN_ID}_100last.png'))
 
