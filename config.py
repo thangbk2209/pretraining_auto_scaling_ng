@@ -44,6 +44,7 @@ class Config:
     }
 
     MLP_CONFIG = {
+        'encoder_trainable': False,
         'hidden_layer_units': [128, 64, 16],
         'drop_out': 0.2,
         'hidden_activation': 'tanh',

@@ -57,7 +57,7 @@ def train_mlp(encoder, X_train, y_train, X_val, y_val, X_test, y_test):
         drop_out=Config.MLP_CONFIG['drop_out']
     ).model
     pred_model = Sequential([encoder, mlp])
-    encoder.trainable = False
+    encoder.trainable = Config.MLP_CONFIG['encoder_trainable']
     pred_model.compile(
         optimizer=Config.MLP_CONFIG['optimizer'],
         loss=Config.MLP_CONFIG['loss'],
