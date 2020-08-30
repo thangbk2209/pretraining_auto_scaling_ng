@@ -7,7 +7,7 @@ from tensorflow.keras.layers import (
 
 class LSTMAutoEncoderV1(object):
     def __init__(self,
-                 inputs_shape,  # (time_steps, features)
+                 input_shape,  # (time_steps, features)
                  layer_units_encoder,
                  layer_units_decoder,
                  timesteps_decoder,
@@ -19,7 +19,7 @@ class LSTMAutoEncoderV1(object):
             raise Exception('number of units in the last encoder layer must equal to number of units in the first '
                             'decoder layer')
 
-        self.inputs_shape = inputs_shape
+        self.input_shape = input_shape
         self.layer_units_encoder = layer_units_encoder
         self.layer_units_decoder = layer_units_decoder
         self.timesteps_decoder = timesteps_decoder
@@ -34,7 +34,7 @@ class LSTMAutoEncoderV1(object):
         decoder_num_layers = len(self.layer_units_decoder)
 
         # encoder
-        encoder_input = Input(shape=self.inputs_shape)
+        encoder_input = Input(shape=self.input_shape)
         z = encoder_input
         for i in range(encoder_num_layers):
             z = LSTM(
@@ -79,7 +79,7 @@ class LSTMAutoEncoderV1(object):
 
 class LSTMAutoEncoderV2(object):
     def __init__(self,
-                 inputs_shape,  # (time_steps, features)
+                 input_shape,  # (time_steps, features)
                  layer_units_encoder,
                  layer_units_decoder,
                  timesteps_decoder,
@@ -88,7 +88,7 @@ class LSTMAutoEncoderV2(object):
                  activation='tanh',
                  recurrent_activation='sigmoid'):
 
-        self.inputs_shape = inputs_shape
+        self.input_shape = input_shape
         self.layer_units_encoder = layer_units_encoder
         self.layer_units_decoder = layer_units_decoder
         self.timesteps_decoder = timesteps_decoder
@@ -103,7 +103,7 @@ class LSTMAutoEncoderV2(object):
         decoder_num_layers = len(self.layer_units_decoder)
 
         # encoder
-        encoder_input = Input(shape=self.inputs_shape)
+        encoder_input = Input(shape=self.input_shape)
         z = encoder_input
         encoder_output = None
         encoder_states = list()
