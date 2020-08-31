@@ -43,9 +43,9 @@ def print_status_bar():
 def train_gan(generator, discriminator, X_gen, y_gen, X_dis):
     batch_size = CONFIG.GAN['batch_size']
     num_samples = min(len(X_gen), len(X_dis))
-    num_batchs = ceil(num_samples / batch_size)
-    gen_optimizer = CONFIG.GAN['gen_optimizer']
-    dis_optimizer = CONFIG.GAN['dis_optimizer']
+    num_batches = ceil(num_samples / batch_size)
+    gen_optimizer = tf.optimizers.get(CONFIG.GAN['gen_optimizer'])
+    dis_optimizer = tf.optimizers.get(CONFIG.GAN['dis_optimizer'])
 
     # get generator total loss function
     w_gan = GanConfig.GAN['w_gan']
@@ -55,7 +55,7 @@ def train_gan(generator, discriminator, X_gen, y_gen, X_dis):
     generator_loss = get_generator_loss_function(w_gan, w_reg, w_direct, threshold)
 
     for epoch in tf.range(CONFIG.GAN['epochs']):
-        for idx_batch in tf.range(num_batchs):
+        for idx_batch in tf.range(num_batches):
             # data
             idx_start = idx_batch*batch_size
             idx_end = idx_start + batch_size
@@ -127,5 +127,4 @@ def train():
     train_gan(generator, discriminator, X_gen_train, y_gen_train, X_dis_train)
 
     return None
-
 

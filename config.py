@@ -1,4 +1,5 @@
 import os
+import tensorflow as tf
 
 PROJECT_DIR = os.path.abspath(os.path.dirname(__file__))
 CORE_DATA_DIR = os.path.join(PROJECT_DIR, 'data')
@@ -11,7 +12,7 @@ class GanConfig:
         'w_reg': 1.,
         'w_direct': 1.,
         'threshold': 0.01,
-        'gen_optimizer': 'adam',
+        'gen_optimizer': 'adam',  # or tf.optimizers.Adam(learning_rate=0.001)
         'dis_optimizer': 'adam',
         'batch_size': 512,
         'epochs': 1
