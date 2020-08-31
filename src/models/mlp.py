@@ -1,4 +1,5 @@
 from tensorflow.keras.layers import Layer, Dropout, Dense
+from tensorflow.keras import Input
 
 
 class MLPBlock(Layer):
@@ -19,3 +20,7 @@ class MLPBlock(Layer):
         for layer in self.hidden_layers:
             z = layer(z)
         return z
+
+
+# def mlp_block(layer_units, dropout=None, activation=None, last_activation=None):
+

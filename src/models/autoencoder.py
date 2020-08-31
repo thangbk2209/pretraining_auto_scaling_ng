@@ -7,12 +7,12 @@ from tensorflow.keras.layers import (
 
 class LSTMAutoEncoderV1(object):
     def __init__(self,
-                 input_shape,  # (time_steps, features)
+                 input_shape,  # (timesteps, features)
                  layer_units_encoder,
                  layer_units_decoder,
                  timesteps_decoder,
-                 drop_out=.0,
-                 recurrent_drop_out=.0,
+                 dropout=.0,
+                 recurrent_dropout=.0,
                  activation='tanh',
                  recurrent_activation='sigmoid'):
         if layer_units_encoder[-1] != layer_units_decoder[0]:
@@ -23,8 +23,8 @@ class LSTMAutoEncoderV1(object):
         self.layer_units_encoder = layer_units_encoder
         self.layer_units_decoder = layer_units_decoder
         self.timesteps_decoder = timesteps_decoder
-        self.drop_out = drop_out
-        self.recurrent_drop_out = recurrent_drop_out
+        self.dropout = dropout
+        self.recurrent_dropout = recurrent_dropout
         self.activation = activation
         self.recurrent_activation = recurrent_activation
         self.encoder, self.model = self._build_models()
@@ -41,8 +41,8 @@ class LSTMAutoEncoderV1(object):
                 units=self.layer_units_encoder[i],
                 activation=self.activation,
                 recurrent_activation=self.recurrent_activation,
-                dropout=self.drop_out,
-                recurrent_dropout=self.recurrent_drop_out,
+                dropout=self.dropout,
+                recurrent_dropout=self.recurrent_dropout,
                 return_sequences=(i != encoder_num_layers - 1),
                 return_state=(i == encoder_num_layers - 1)
             )(z)
@@ -57,8 +57,8 @@ class LSTMAutoEncoderV1(object):
             units=self.layer_units_decoder[0],
             activation=self.activation,
             recurrent_activation=self.recurrent_activation,
-            dropout=self.drop_out,
-            recurrent_dropout=self.recurrent_drop_out,
+            dropout=self.dropout,
+            recurrent_dropout=self.recurrent_dropout,
             return_sequences=True
         )(decoder_input, initial_state=encoder_state)
 
@@ -67,8 +67,8 @@ class LSTMAutoEncoderV1(object):
                 units=self.layer_units_decoder[i],
                 activation=self.activation,
                 recurrent_activation=self.recurrent_activation,
-                dropout=self.drop_out,
-                recurrent_dropout=self.recurrent_drop_out,
+                dropout=self.dropout,
+                recurrent_dropout=self.recurrent_dropout,
                 return_sequences=True
             )(v)
         v = TimeDistributed(Dense(1))(v)
@@ -79,12 +79,12 @@ class LSTMAutoEncoderV1(object):
 
 class LSTMAutoEncoderV2(object):
     def __init__(self,
-                 input_shape,  # (time_steps, features)
+                 input_shape,  # (timesteps, features)
                  layer_units_encoder,
                  layer_units_decoder,
                  timesteps_decoder,
-                 drop_out=.0,
-                 recurrent_drop_out=.0,
+                 dropout=.0,
+                 recurrent_dropout=.0,
                  activation='tanh',
                  recurrent_activation='sigmoid'):
 
@@ -92,8 +92,8 @@ class LSTMAutoEncoderV2(object):
         self.layer_units_encoder = layer_units_encoder
         self.layer_units_decoder = layer_units_decoder
         self.timesteps_decoder = timesteps_decoder
-        self.drop_out = drop_out
-        self.recurrent_drop_out = recurrent_drop_out
+        self.dropout = dropout
+        self.recurrent_dropout = recurrent_dropout
         self.activation = activation
         self.recurrent_activation = recurrent_activation
         self.encoder, self.model = self._build_models()
@@ -112,8 +112,8 @@ class LSTMAutoEncoderV2(object):
                 units=self.layer_units_encoder[i],
                 activation=self.activation,
                 recurrent_activation=self.recurrent_activation,
-                dropout=self.drop_out,
-                recurrent_dropout=self.recurrent_drop_out,
+                dropout=self.dropout,
+                recurrent_dropout=self.recurrent_dropout,
                 return_sequences=(i != encoder_num_layers - 1),
                 return_state=True
             )(z)
@@ -128,8 +128,8 @@ class LSTMAutoEncoderV2(object):
                 units=self.layer_units_decoder[i],
                 activation=self.activation,
                 recurrent_activation=self.recurrent_activation,
-                dropout=self.drop_out,
-                recurrent_dropout=self.recurrent_drop_out,
+                dropout=self.dropout,
+                recurrent_dropout=self.recurrent_dropout,
                 return_sequences=True
             )(v, initial_state=encoder_states[i])
         v = TimeDistributed(Dense(1))(v)

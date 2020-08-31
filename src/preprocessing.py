@@ -7,15 +7,15 @@ class Data(object):
     def __init__(self,
                  data,  # numpy array (samples, features)
                  split_ratio=(0.8, 0.2),
-                 input_time_steps=10
+                 input_timesteps=10
                  ):
         if data.shape[1] != 1:
             raise Exception('Data object does not support multivariate!')
         self.data = np.array(data.astype('float32'))
         self.data_train, self.data_test = self._split(split_ratio)
         self._transform_data()
-        self.X_train, self.y_train = self.create_dataset(input_time_steps, type_dataset='train')
-        self.X_test, self.y_test = self.create_dataset(input_time_steps, type_dataset='test')
+        self.X_train, self.y_train = self.create_dataset(input_timesteps, type_dataset='train')
+        self.X_test, self.y_test = self.create_dataset(input_timesteps, type_dataset='test')
 
     def _split(self, ratio):
         n_train = int(len(self.data) * ratio[0])
@@ -66,12 +66,12 @@ class Data(object):
         data = self.minmax_scaler.inverse_transform(data_predict_tranformed)
         data = self.standard_scaler.inverse_transform(data)
         # invert diff
-        # data = data + np.log(data_true_none_transformed)[input_time_steps:-self.interval_diff]
+        # data = data + np.log(data_true_none_transformed)[input_timesteps:-self.interval_diff]
         # invert log
         data = np.exp(data)
         return data
 
-    def create_dataset(self, input_time_steps, data=None, type_dataset=None):
+    def create_dataset(self, input_timesteps, data=None, type_dataset=None):
         """
         data: external data, numpy array (sammples, features)
         type_dataset: 'train', 'test'
@@ -92,9 +92,9 @@ class Data(object):
                 raise Exception('type_data error! please chose: "train" or "test"')
 
         Xs, ys = [], []
-        for i in range(len(data) - input_time_steps):
-            v = data[i:i + input_time_steps]
+        for i in range(len(data) - input_timesteps):
+            v = data[i:i + input_timesteps]
             Xs.append(v)
-            ys.append(data[i+input_time_steps])
+            ys.append(data[i+input_timesteps])
         Xs, ys = np.array(Xs), np.array(ys)
         return Xs, ys

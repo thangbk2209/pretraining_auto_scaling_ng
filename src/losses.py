@@ -1,5 +1,6 @@
 import tensorflow as tf
-from tensorflow.keras.losses import binary_crossentropy, mean_squared_error
+from tensorflow.keras.losses import BinaryCrossentropy
+binary_crossentropy = BinaryCrossentropy()
 
 
 def discriminator_loss(real_dis_output, fake_dis_output):
@@ -19,7 +20,7 @@ def generator_direct_loss(X, y_gen_true, y_gen_pred):
 
 
 def generator_mse_regression_loss(y_gen_true, y_gen_pred):
-    return mean_squared_error(y_gen_true, y_gen_pred)
+    return tf.reduce_mean(tf.square(y_gen_true - y_gen_pred))
 
 
 def get_generator_loss_function(w_gan, w_reg, w_direct, threshold):
@@ -28,7 +29,9 @@ def get_generator_loss_function(w_gan, w_reg, w_direct, threshold):
         reg_loss = generator_mse_regression_loss(y_gen_true, y_gen_pred)
         direct_loss = generator_direct_loss(X, y_gen_true, y_gen_pred)
         if reg_loss < threshold:
-            return gan_loss
-        return w_gan*gan_loss + w_reg*reg_loss + w_direct*direct_loss
+            total_loss = gan_loss
+        else:
+            total_loss = w_gan*gan_loss + w_reg*reg_loss + w_direct*direct_loss
+        return total_loss, gan_loss, reg_loss, direct_loss
     return loss_function
 
