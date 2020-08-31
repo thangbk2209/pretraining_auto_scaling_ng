@@ -21,13 +21,13 @@ class Data(object):
                                                                                                    n_train + n_val:]
         return data_train, data_val, data_test
 
-    @staticmethod
-    def difference(data, interval=1):
-        diff = list()
-        for i in range(interval, len(data)):
-            v = data[i] - data[i - interval]
-            diff.append(v)
-        return np.array(diff)
+    # @staticmethod
+    # def difference(data, interval=1):
+    #     diff = list()
+    #     for i in range(interval, len(data)):
+    #         v = data[i] - data[i - interval]
+    #         diff.append(v)
+    #     return np.array(diff)
 
 
     @staticmethod
@@ -39,7 +39,7 @@ class Data(object):
 
     def _transform_data(self):
         train = self.log_transform(self.data_train)
-        train = self.difference(train, self.interval_diff)
+        # train = self.difference(train, self.interval_diff)
 
         self.standard_scaler = StandardScaler()
         self.standard_scaler.fit(train)
@@ -55,7 +55,7 @@ class Data(object):
 
     def transform(self, data):
         data = self.log_transform(data)
-        data = self.difference(data, self.interval_diff)
+        # data = self.difference(data, self.interval_diff)
         data = self.standard_scaler.transform(data)
         data = self.minmax_scaler.transform(data)
         return data
