@@ -22,7 +22,7 @@ METRIC_GENERATOR_LOSS = 'RootMeanSquaredError'
 
 class GanConfig:
     GAN = {
-        'noise_shape': 4,
+        'noise_size': 4,
         'w_gan': 1.,
         'w_reg': 1.,
         'w_direct': 1.,

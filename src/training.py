@@ -4,10 +4,9 @@ import numpy as np
 from math import ceil
 from pandas import read_csv
 from src.models.autoencoder import LSTMAutoEncoderV1, LSTMAutoEncoderV2
-from src.models.mlp import MLPBlock
-from src.models.generator import Generator
-from src.models.discriminator import Discriminator
-from src.models.gan import Gan
+from src.models.mlp import get_mlp_block
+from src.models.generator import get_generator
+from src.models.discriminator import get_discriminator
 from src.losses import discriminator_loss, get_generator_loss_function
 from src.preprocessing import Data
 from config import *
@@ -28,6 +27,8 @@ def build_train_autoencoder(AE_CONFIG, X_train, X_test):
         recurrent_activation=AE_CONFIG['recurrent_activation']
     )
     autoencoder.model.compile(optimizer=AE_CONFIG['optimizer'], loss=AE_CONFIG['loss'])
+    autoencoder.model.summary()
+
     timesteps_decoder = AE_CONFIG['timesteps_decoder']
     autoencoder.model.fit(
         [X_train, X_train[:, -timesteps_decoder - 1:-1, :]], X_train[:, -timesteps_decoder:, :],
@@ -44,7 +45,7 @@ def build_train_autoencoder(AE_CONFIG, X_train, X_test):
     return autoencoder
 
 
-def train_gan(generator, discriminator, X_gen, y_gen, X_dis, X_gen_test, y_gen_test):
+def train_gan(generator, discriminator, X_gen, y_gen, X_dis, X_gen_test, y_gen_test, noise_size):
     print('training GAN ----------------------------------------------------')
     batch_size = CONFIG.GAN['batch_size']
     num_samples = min(len(X_gen), len(X_dis))
@@ -75,7 +76,7 @@ def train_gan(generator, discriminator, X_gen, y_gen, X_dis, X_gen_test, y_gen_t
 
             # feed forward
             with tf.GradientTape() as gen_tape, tf.GradientTape() as dis_tape:
-                y_gen_pred = generator(X_gen_batch, training=True)
+                y_gen_pred = generator([X_gen_batch, tf.random.normal(shape=(X_gen_batch.shape[0], noise_size))], training=True)
                 tmp = tf.reshape(y_gen_pred, [y_gen_pred.shape[0], y_gen_pred.shape[1], 1])
                 tmp = tf.concat([X_gen_batch, tmp], axis=1)
                 fake_output = discriminator(tmp, training=True)
@@ -94,11 +95,17 @@ def train_gan(generator, discriminator, X_gen, y_gen, X_dis, X_gen_test, y_gen_t
             dis_optimizer.apply_gradients(zip(gradients_of_dis, discriminator.trainable_variables))
         # Evaluate:
         y_gen_train_pred = np.concatenate(
-            [generator(X_gen, training=False).numpy() for _ in range(PREDICTION_TIMES)],
+            [generator(
+                [X_gen, tf.random.normal(shape=(X_gen.shape[0], noise_size))],
+                training=False
+            ).numpy() for _ in range(PREDICTION_TIMES)],
             axis=-1
         ).mean(axis=-1)
         y_gen_test_pred = np.concatenate(
-            [generator(X_gen_test, training=False).numpy() for _ in range(PREDICTION_TIMES)],
+            [generator(
+                [X_gen_test, tf.random.normal(shape=(X_gen_test.shape[0], noise_size))],
+                training=False
+            ).numpy() for _ in range(PREDICTION_TIMES)],
             axis=-1
         ).mean(axis=-1)
         train_loss = metric(y_gen, y_gen_train_pred)
@@ -135,28 +142,33 @@ def train():
     gen_ae = build_train_autoencoder(CONFIG.GEN_AE, X_gen_train, X_gen_test)
 
     # build generator
-    gen_mlp_block = MLPBlock(
+    gen_mlp_block = get_mlp_block(
+        (gen_ae.encoder.output_shape[1]+CONFIG.GAN['noise_size'],),
         CONFIG.GEN_MLP['layer_units'],
         CONFIG.GEN_MLP['dropout'],
         CONFIG.GEN_MLP['activation'],
         CONFIG.GEN_MLP['last_activation'],
     )
-    generator = Generator(gen_ae.encoder, CONFIG.GAN['noise_shape'], gen_mlp_block)
+    generator = get_generator(gen_ae.encoder, CONFIG.GAN['noise_size'], gen_mlp_block)
+    generator.summary()
+    tf.keras.utils.plot_model(generator, show_shapes=True, to_file='gen_test.png')
 
     # pre-training autoencoder for discriminator: dis_ae
     dis_ae = build_train_autoencoder(CONFIG.DIS_AE, X_dis_train, X_dis_test)
 
     # build discriminator
-    dis_mlp_block = MLPBlock(
+    dis_mlp_block = get_mlp_block(
+        dis_ae.encoder.output_shape[1:],
         CONFIG.DIS_MLP['layer_units'],
         CONFIG.DIS_MLP['dropout'],
         CONFIG.DIS_MLP['activation'],
         CONFIG.DIS_MLP['last_activation'],
     )
-    discriminator = Discriminator(dis_ae.encoder, dis_mlp_block)
+    discriminator = get_discriminator(dis_ae.encoder, dis_mlp_block)
+    discriminator.summary()
 
     # training GAN
-    train_gan(generator, discriminator, X_gen_train, y_gen_train, X_dis_train, X_gen_test, y_gen_test)
+    train_gan(generator, discriminator, X_gen_train, y_gen_train, X_dis_train, X_gen_test, y_gen_test, CONFIG.GAN['noise_size'])
 
     generator.save(os.path.join(MODELS_DIR, 'generator_{}.h5'.format(RUN_ID)))
     print('model save to {}'.format(MODELS_DIR))
