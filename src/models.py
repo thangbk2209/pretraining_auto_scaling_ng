@@ -10,12 +10,12 @@ import os
 
 class LSTMAutoEncoder(object):
     def __init__(self,
-                 inputs_shape,  # (time_steps, features)
+                 inputs_shape,  # (timesteps, features)
                  layer_units_encoder,
                  layer_units_decoder,
                  timesteps_decoder,
-                 drop_out=.0,
-                 recurrent_drop_out=.0,
+                 dropout=.0,
+                 recurrent_dropout=.0,
                  activation='tanh',
                  recurrent_activation='sigmoid'):
         if layer_units_encoder[-1] != layer_units_decoder[0]:
@@ -26,8 +26,8 @@ class LSTMAutoEncoder(object):
         self.layer_units_encoder = layer_units_encoder
         self.layer_units_decoder = layer_units_decoder
         self.timesteps_decoder = timesteps_decoder
-        self.drop_out = drop_out
-        self.recurrent_drop_out = recurrent_drop_out
+        self.dropout = dropout
+        self.recurrent_dropout = recurrent_dropout
         self.activation = activation
         self.recurrent_activation = recurrent_activation
         self.encoder, self.model = self._build_models()
@@ -44,8 +44,8 @@ class LSTMAutoEncoder(object):
                 units=self.layer_units_encoder[i],
                 activation=self.activation,
                 recurrent_activation=self.recurrent_activation,
-                dropout=self.drop_out,
-                recurrent_dropout=self.recurrent_drop_out,
+                dropout=self.dropout,
+                recurrent_dropout=self.recurrent_dropout,
                 return_sequences=(i != encoder_num_layers - 1),
                 return_state=(i == encoder_num_layers - 1)
             )(z)
@@ -60,8 +60,8 @@ class LSTMAutoEncoder(object):
             units=self.layer_units_decoder[0],
             activation=self.activation,
             recurrent_activation=self.recurrent_activation,
-            dropout=self.drop_out,
-            recurrent_dropout=self.recurrent_drop_out,
+            dropout=self.dropout,
+            recurrent_dropout=self.recurrent_dropout,
             return_sequences=True
         )(decoder_inputs, initial_state=encoder_state)
 
@@ -70,8 +70,8 @@ class LSTMAutoEncoder(object):
                 units=self.layer_units_decoder[i],
                 activation=self.activation,
                 recurrent_activation=self.recurrent_activation,
-                dropout=self.drop_out,
-                recurrent_dropout=self.recurrent_drop_out,
+                dropout=self.dropout,
+                recurrent_dropout=self.recurrent_dropout,
                 return_sequences=True
             )(v)
         v = TimeDistributed(Dense(1))(v)
@@ -80,29 +80,89 @@ class LSTMAutoEncoder(object):
         return encoder, autoencoder
 
 
+class LSTMAutoEncoderV2(object):
+    def __init__(self,
+                 inputs_shape,  # (timesteps, features)
+                 layer_units_encoder,
+                 layer_units_decoder,
+                 timesteps_decoder,
+                 dropout=.0,
+                 recurrent_dropout=.0,
+                 activation='tanh',
+                 recurrent_activation='sigmoid'):
+
+        self.inputs_shape = inputs_shape
+        self.layer_units_encoder = layer_units_encoder
+        self.layer_units_decoder = layer_units_decoder
+        self.timesteps_decoder = timesteps_decoder
+        self.dropout = dropout
+        self.recurrent_dropout = recurrent_dropout
+        self.activation = activation
+        self.recurrent_activation = recurrent_activation
+        self.encoder, self.model = self._build_models()
+
+    def _build_models(self):
+        encoder_num_layers = len(self.layer_units_encoder)
+        decoder_num_layers = len(self.layer_units_decoder)
+
+        # encoder
+        encoder_input = Input(shape=self.inputs_shape)
+        z = encoder_input
+        encoder_output = None
+        encoder_states = list()
+        for i in range(encoder_num_layers):
+            z, state_h, state_c = LSTM(
+                units=self.layer_units_encoder[i],
+                activation=self.activation,
+                recurrent_activation=self.recurrent_activation,
+                dropout=self.dropout,
+                recurrent_dropout=self.recurrent_dropout,
+                return_sequences=(i != encoder_num_layers - 1),
+                return_state=True
+            )(z)
+            encoder_states.append([state_h, state_c])
+        encoder = Model(inputs=[encoder_input], outputs=[z])
+
+        # decoder
+        decoder_input = Input(shape=(self.timesteps_decoder, 1))
+        v = decoder_input
+        for i in range(decoder_num_layers):
+            v = LSTM(
+                units=self.layer_units_decoder[i],
+                activation=self.activation,
+                recurrent_activation=self.recurrent_activation,
+                dropout=self.dropout,
+                recurrent_dropout=self.recurrent_dropout,
+                return_sequences=True
+            )(v, initial_state=encoder_states[i])
+        v = TimeDistributed(Dense(1))(v)
+
+        autoencoder = Model(inputs=[encoder_input, decoder_input], outputs=[v])
+        return encoder, autoencoder
+
+
 class MLPNet(object):
     def __init__(self,
                  hidden_layer_units,
-                 drop_out=.0,
+                 dropout=.0,
                  hidden_activation='relu'):
         self.hidden_layer_units = hidden_layer_units
-        self.drop_out = drop_out
+        self.dropout = dropout
         self.hidden_activation = hidden_activation
         self.model = self._build_model()
 
     def _build_model(self):
         num_hidden_layers = len(self.hidden_layer_units)
-        has_drop_out = self.drop_out != 0.0
+        has_dropout = self.dropout != 0.0
         mlp = Sequential()
-        if has_drop_out:
-            mlp.add(Dropout(self.drop_out))
+        if has_dropout:
+            mlp.add(Dropout(self.dropout))
         for i in range(num_hidden_layers):
             mlp.add(Dense(units=self.hidden_layer_units[i], activation=self.hidden_activation))
-            if has_drop_out:
-                mlp.add(Dropout(self.drop_out))
+            if has_dropout:
+                mlp.add(Dropout(self.dropout))
         mlp.add(Dense(1))
         return mlp
-
 
 # if __name__ == '__main__':
 #     from tensorflow.keras.utils import plot_model
@@ -115,4 +175,3 @@ class MLPNet(object):
 #     )
 #
 #     plot_model(ae.model, to_file= CORE_DATA_DIR+'/plot_models/test.png', show_shapes=True)
-

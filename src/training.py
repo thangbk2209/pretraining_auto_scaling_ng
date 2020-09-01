@@ -4,7 +4,7 @@ import shutil
 import numpy as np
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.callbacks import TensorBoard, EarlyStopping
-from src.models import LSTMAutoEncoder, MLPNet
+from src.models import LSTMAutoEncoderV2, MLPNet
 from src.preprocessing import Data
 import matplotlib.pyplot as plt
 from config import *
@@ -13,13 +13,13 @@ from config import *
 def train_autoencoder(encoder_train_inputs, decoder_train_inputs, decoder_train_outputs,
                       encoder_validation_inputs, decoder_validation_inputs, decoder_validation_outputs,
                       encoder_test_inputs, decoder_test_inputs, decoder_test_outputs):
-    autoencoder = LSTMAutoEncoder(
-        inputs_shape=(Config.INPUT_TIME_STEPS, Config.FEATURES),
+    autoencoder = LSTMAutoEncoderV2(
+        inputs_shape=(Config.INPUT_TIMESTEPS, Config.FEATURES),
         layer_units_encoder=Config.AE_CONFIG['layer_units_encoder'],
         layer_units_decoder=Config.AE_CONFIG['layer_units_decoder'],
-        timesteps_decoder=Config.AE_CONFIG['time_steps_decoder'],
-        drop_out=Config.AE_CONFIG['drop_out'],
-        recurrent_drop_out=Config.AE_CONFIG['recurrent_drop_out'],
+        timesteps_decoder=Config.AE_CONFIG['timesteps_decoder'],
+        dropout=Config.AE_CONFIG['dropout'],
+        recurrent_dropout=Config.AE_CONFIG['recurrent_dropout'],
         activation=Config.AE_CONFIG['activation'],
         recurrent_activation=Config.AE_CONFIG['recurrent_activation']
     )
@@ -33,6 +33,7 @@ def train_autoencoder(encoder_train_inputs, decoder_train_inputs, decoder_train_
     early_stopping_cb = EarlyStopping(patience=Config.PATIENCE, restore_best_weights=True)
     history = autoencoder.model.fit(
         [encoder_train_inputs, decoder_train_inputs], decoder_train_outputs,
+        shuffle=False,
         validation_data=([encoder_validation_inputs, decoder_validation_inputs], decoder_validation_outputs),
         batch_size=Config.AE_CONFIG['batch_size'],
         epochs=Config.AE_CONFIG['epochs'],
@@ -54,7 +55,7 @@ def train_mlp(encoder, X_train, y_train, X_val, y_val, X_test, y_test):
     mlp = MLPNet(
         hidden_layer_units=Config.MLP_CONFIG['hidden_layer_units'],
         hidden_activation=Config.MLP_CONFIG['hidden_activation'],
-        drop_out=Config.MLP_CONFIG['drop_out']
+        dropout=Config.MLP_CONFIG['dropout']
     ).model
     pred_model = Sequential([encoder, mlp])
     encoder.trainable = Config.MLP_CONFIG['encoder_trainable']
@@ -113,21 +114,21 @@ def run():
     #             predict_cols.append(i)
     X_train, y_train = data_obj.create_dataset(
         type_dataset='train',
-        input_time_steps=Config.INPUT_TIME_STEPS, predict_time_steps=Config.PREDICT_TIME_STEPS,
+        input_timesteps=Config.INPUT_TIMESTEPS, predict_timesteps=Config.PREDICT_TIMESTEPS,
         input_cols=input_cols, predict_cols=input_cols)
     X_val, y_val = data_obj.create_dataset(
         type_dataset='validation',
-        input_time_steps=Config.INPUT_TIME_STEPS, predict_time_steps=Config.PREDICT_TIME_STEPS,
+        input_timesteps=Config.INPUT_TIMESTEPS, predict_timesteps=Config.PREDICT_TIMESTEPS,
         input_cols=input_cols, predict_cols=input_cols)
     X_test, y_test = data_obj.create_dataset(
         type_dataset='test',
-        input_time_steps=Config.INPUT_TIME_STEPS, predict_time_steps=Config.PREDICT_TIME_STEPS,
+        input_timesteps=Config.INPUT_TIMESTEPS, predict_timesteps=Config.PREDICT_TIMESTEPS,
         input_cols=input_cols, predict_cols=input_cols)
     print('dataset shape:')
     print(X_train.shape, y_train.shape, X_val.shape, y_val.shape, X_test.shape, y_test.shape)
 
     print('Training AutoEncoder: ')
-    decoder_timesteps = Config.AE_CONFIG['time_steps_decoder']
+    decoder_timesteps = Config.AE_CONFIG['timesteps_decoder']
     autoencoder = train_autoencoder(
         X_train, X_train[:, -decoder_timesteps-1:-1, :], X_train[:, -decoder_timesteps:, :],
         X_val, X_val[:, -decoder_timesteps-1:-1, :], X_val[:, -decoder_timesteps:, :],
@@ -138,12 +139,13 @@ def run():
     # train mlp
     pred_model = train_mlp(autoencoder.encoder, X_train, y_train, X_val, y_val, X_test, y_test)
     
-    test_err = pred_model.evaluate(X_test, y_test)
+    y_pred = np.stack([pred_model(X_test, training=True).numpy() for _ in range(PREDICT_TIMES)]).mean(axis=0)
+    test_err = ((y_pred - y_test)**2).mean()
+
     print('mse test: {:.4f}'.format(test_err))
     print('rmse test: {:.4f}'.format(np.sqrt(test_err)))
 
-    y_ped = pred_model.predict(X_test)
-    y_pred_invert = data_obj.invert_transform(y_ped.reshape(-1, 1))
+    y_pred_invert = data_obj.invert_transform(y_pred.reshape(-1, 1))
     y_test_invert = data_obj.invert_transform(y_test.reshape(-1, 1))
 
     rmse_test = np.sqrt(((y_pred_invert - y_test_invert) ** 2).mean())

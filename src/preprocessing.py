@@ -66,7 +66,7 @@ class Data(object):
         data = self.minmax_scaler.inverse_transform(data_predict_tranformed)
         data = self.standard_scaler.inverse_transform(data)
         # invert diff
-        # data = data + np.log(data_true_none_transformed)[input_time_steps:-self.interval_diff]
+        # data = data + np.log(data_true_none_transformed)[input_timesteps:-self.interval_diff]
         # invert log
         data = np.exp(data)
         return data
@@ -74,14 +74,14 @@ class Data(object):
     def create_dataset(
             self, data=None, type_dataset=None,
             input_cols=[0], predict_cols=[0],
-            input_time_steps=10, predict_time_steps=1
+            input_timesteps=10, predict_timesteps=1
     ):
         """
         data: external data, numpy array (sammples, features)
         type_dataset: 'train', 'test', 'validation'
 
         return X_train , y_train
-            (samples, time_steps, features), (samples, time_steps, features)
+            (samples, timesteps, features), (samples, timesteps, features)
 
         """
         if data is None and type_dataset is None:
@@ -103,10 +103,10 @@ class Data(object):
         y = data[:, predict_cols]
 
         Xs, ys = [], []
-        for i in range(len(X) - input_time_steps - predict_time_steps + 1):
-            v = X[i:i + input_time_steps]
+        for i in range(len(X) - input_timesteps - predict_timesteps + 1):
+            v = X[i:i + input_timesteps]
             Xs.append(v)
-            v = y[i + input_time_steps:i + input_time_steps + predict_time_steps]
+            v = y[i + input_timesteps:i + input_timesteps + predict_timesteps]
             ys.append(v)
         Xs, ys = np.array(Xs), np.array(ys)
         return Xs, ys

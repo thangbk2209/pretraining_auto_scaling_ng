@@ -5,13 +5,13 @@ from sklearn.preprocessing import MinMaxScaler
 # X (sample, features), y numpy array
 # return X: (samples, timesteps, features)
 #        y: expected values
-def create_dataset(X, y, time_steps=1):
+def create_dataset(X, y, timesteps=1):
     features = X.shape[1]
     Xs, ys = [], []
-    for i in range(len(X) - time_steps):
-        v = X[i : i+time_steps]
+    for i in range(len(X) - timesteps):
+        v = X[i : i+timesteps]
         Xs.append(v)
-        ys.append(y[i + time_steps])
+        ys.append(y[i + timesteps])
     Xs, ys = np.array(Xs), np.array(ys)
     return Xs, ys
 

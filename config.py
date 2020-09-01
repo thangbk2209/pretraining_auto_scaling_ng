@@ -17,40 +17,41 @@ CONFIGS_DIR = os.path.join(CORE_DATA_DIR, 'configs')
 DATA_FILE = os.path.join(CORE_DATA_DIR, 'input_data', 'google_trace', '1_job', '5_mins.csv')
 CSV_HEADER = None
 INPUT_COLS = [3]
+PREDICT_TIMES = 200
 
 
 class Config:
     LEARNING_RATE = 3e-4
     SPLIT_RATIO = (0.7, 0.1, 0.2)
-    INPUT_TIME_STEPS = 32
-    PREDICT_TIME_STEPS = 1
+    INPUT_TIMESTEPS = 32
+    PREDICT_TIMESTEPS = 1
     FEATURES = len(INPUT_COLS)
     VERBOSE = 2
     INTERVAL_DIFF = 1
-    PATIENCE = 10
+    PATIENCE = 20
 
     AE_CONFIG = {
-        'layer_units_encoder': [64, 32],
-        'layer_units_decoder': [32, 64],
-        'time_steps_decoder': 8,
-        'drop_out': 0.2,
-        'recurrent_drop_out': 0.2,
+        'layer_units_encoder': [64],
+        'layer_units_decoder': [64],
+        'timesteps_decoder': 8,
+        'dropout': 0.3,
+        'recurrent_dropout': 0.1,
         'activation': 'tanh',
         'recurrent_activation': 'sigmoid',
         'batch_size': 512,
         'optimizer': 'adam',
         'loss': 'mse',
-        'epochs': 100
+        'epochs': 500
     }
 
     MLP_CONFIG = {
         'encoder_trainable': False,
         'hidden_layer_units': [128, 64, 16],
-        'drop_out': 0.2,
+        'dropout': 0.2,
         'hidden_activation': 'tanh',
         'batch_size': 512,
         'optimizer': 'adam',
         'loss': 'mse',
-        'epochs': 100
+        'epochs': 500
         
     }
