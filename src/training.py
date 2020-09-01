@@ -10,6 +10,7 @@ from src.models.discriminator import get_discriminator
 from src.losses import discriminator_loss, get_generator_loss_function
 from src.preprocessing import Data
 from config import *
+from src.utils import plot_result
 
 CONFIG = GanConfig()
 
@@ -45,7 +46,7 @@ def build_train_autoencoder(AE_CONFIG, X_train, X_test):
     return autoencoder
 
 
-def train_gan(generator, discriminator, X_gen, y_gen, X_dis, X_gen_test, y_gen_test, noise_size):
+def train_gan(generator, discriminator, X_gen, y_gen, X_dis, X_gen_test, y_gen_test, noise_size, data_obj=None):
     print('training GAN ----------------------------------------------------')
     batch_size = CONFIG.GAN['batch_size']
     num_samples = min(len(X_gen), len(X_dis))
@@ -61,8 +62,9 @@ def train_gan(generator, discriminator, X_gen, y_gen, X_dis, X_gen_test, y_gen_t
     generator_loss = get_generator_loss_function(w_gan, w_reg, w_direct, threshold)
 
     train_loss_list, test_loss_list = [], []
-    metric = tf.keras.metrics.get(METRIC_GENERATOR_LOSS)
     n_epochs = CONFIG.GAN['epochs']
+    y_gen_test_pred, test_loss = None, None
+    rmse_func = lambda y_true, y_pred: np.sqrt(((y_true - y_pred) ** 2).mean())
     for epoch in range(n_epochs):
         for idx_batch in tf.range(num_batches):
             # data
@@ -76,7 +78,8 @@ def train_gan(generator, discriminator, X_gen, y_gen, X_dis, X_gen_test, y_gen_t
 
             # feed forward
             with tf.GradientTape() as gen_tape, tf.GradientTape() as dis_tape:
-                y_gen_pred = generator([X_gen_batch, tf.random.normal(shape=(X_gen_batch.shape[0], noise_size))], training=True)
+                y_gen_pred = generator([X_gen_batch, tf.random.normal(shape=(X_gen_batch.shape[0], noise_size))],
+                                       training=True)
                 tmp = tf.reshape(y_gen_pred, [y_gen_pred.shape[0], y_gen_pred.shape[1], 1])
                 tmp = tf.concat([X_gen_batch, tmp], axis=1)
                 fake_output = discriminator(tmp, training=True)
@@ -94,30 +97,37 @@ def train_gan(generator, discriminator, X_gen, y_gen, X_dis, X_gen_test, y_gen_t
             gen_optimizer.apply_gradients(zip(gradients_of_gen, generator.trainable_variables))
             dis_optimizer.apply_gradients(zip(gradients_of_dis, discriminator.trainable_variables))
         # Evaluate:
-        y_gen_train_pred = np.concatenate(
+        y_gen_train_pred = np.stack(
             [generator(
                 [X_gen, tf.random.normal(shape=(X_gen.shape[0], noise_size))],
                 training=False
-            ).numpy() for _ in range(PREDICTION_TIMES)],
-            axis=-1
-        ).mean(axis=-1)
-        y_gen_test_pred = np.concatenate(
+            ).numpy() for _ in range(PREDICTION_TIMES_TRAIN)]
+        ).mean(axis=0)
+        y_gen_test_pred = np.stack(
             [generator(
                 [X_gen_test, tf.random.normal(shape=(X_gen_test.shape[0], noise_size))],
                 training=False
-            ).numpy() for _ in range(PREDICTION_TIMES)],
-            axis=-1
-        ).mean(axis=-1)
-        train_loss = metric(y_gen, y_gen_train_pred)
-        test_loss = metric(y_gen_test, y_gen_test_pred)
+            ).numpy() for _ in range(PREDICTION_TIMES_TRAIN)]
+        ).mean(axis=0)
+        train_loss = rmse_func(y_gen, y_gen_train_pred)
+        test_loss = rmse_func(y_gen_test, y_gen_test_pred)
         train_loss_list.append(train_loss)
         test_loss_list.append(test_loss)
-
         # print loss:
-        print('Epoch {}/{}: train: {} - test: {} ----------------'.format(epoch + 1, n_epochs, train_loss, test_loss))
+        print('Epoch {}/{}: rmse: train: {} - test: {} ------'.format(epoch + 1, n_epochs, train_loss, test_loss))
 
+    # Evaluating
+    y_gen_test_pred = np.stack(
+        [generator(
+            [X_gen_test, tf.random.normal(shape=(X_gen_test.shape[0], noise_size))],
+            training=False
+        ).numpy() for _ in range(PREDICTION_TIMES_EVALUATE)]
+    ).mean(axis=0)
+    y_gen_test_inv = data_obj.invert_transform(y_gen_test)
+    y_gen_test_pred_inv = data_obj.invert_transform(y_gen_test_pred)
+    test_loss_inv = rmse_func(y_gen_test_inv, y_gen_test_pred_inv)
+    plot_result(train_loss_list, test_loss_list, y_gen_test_inv, y_gen_test_pred_inv, test_loss_inv)
     return train_loss_list, test_loss_list
-
 
 def train():
     # save config.py
@@ -143,7 +153,7 @@ def train():
 
     # build generator
     gen_mlp_block = get_mlp_block(
-        (gen_ae.encoder.output_shape[1]+CONFIG.GAN['noise_size'],),
+        (gen_ae.encoder.output_shape[1] + CONFIG.GAN['noise_size'],),
         CONFIG.GEN_MLP['layer_units'],
         CONFIG.GEN_MLP['dropout'],
         CONFIG.GEN_MLP['activation'],
@@ -168,7 +178,8 @@ def train():
     discriminator.summary()
 
     # training GAN
-    train_gan(generator, discriminator, X_gen_train, y_gen_train, X_dis_train, X_gen_test, y_gen_test, CONFIG.GAN['noise_size'])
+    train_gan(generator, discriminator, X_gen_train, y_gen_train, X_dis_train, X_gen_test, y_gen_test,
+              CONFIG.GAN['noise_size'], data_obj)
 
     generator.save(os.path.join(MODELS_DIR, 'generator_{}.h5'.format(RUN_ID)))
     print('model save to {}'.format(MODELS_DIR))
