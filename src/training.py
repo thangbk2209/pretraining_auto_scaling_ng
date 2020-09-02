@@ -35,6 +35,7 @@ def build_train_autoencoder(AE_CONFIG, X_train, X_test):
         [X_train, X_train[:, -timesteps_decoder - 1:-1, :]], X_train[:, -timesteps_decoder:, :],
         validation_split=AE_CONFIG['validation_split'],
         batch_size=AE_CONFIG['batch_size'],
+        epochs=AE_CONFIG['epochs'],
         shuffle=False,
         verbose=2,
         callbacks=AE_CONFIG['callbacks']
