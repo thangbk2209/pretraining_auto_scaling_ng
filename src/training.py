@@ -162,7 +162,7 @@ def train():
     )
     generator = get_generator(gen_ae.encoder, CONFIG.GAN['noise_size'], gen_mlp_block)
     generator.summary()
-    tf.keras.utils.plot_model(generator, show_shapes=True, to_file='gen_test.png')
+    # tf.keras.utils.plot_model(generator, show_shapes=True, to_file='gen_test.png')
 
     # pre-training autoencoder for discriminator: dis_ae
     dis_ae = build_train_autoencoder(CONFIG.DIS_AE, X_dis_train, X_dis_test)
