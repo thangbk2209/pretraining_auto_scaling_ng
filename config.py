@@ -6,7 +6,7 @@ RUN_ID = time.strftime('%Y_%m_%d-%H_%M_%S')
 
 PROJECT_DIR = os.path.abspath(os.path.dirname(__file__))
 CORE_DATA_DIR = os.path.join(PROJECT_DIR, 'data')
-MODELS_DIR = os.path.join(CORE_DATA_DIR, 'models')
+MODELS_DIR = os.path.join(CORE_DATA_DIR, 'models', RUN_ID)
 CONFIGS_DIR = os.path.join(CORE_DATA_DIR, 'configs')
 GEN_AE_LOG_DIR = os.path.join(CORE_DATA_DIR, 'logs', 'gen_ae', RUN_ID)
 DIS_AE_LOG_DIR = os.path.join(CORE_DATA_DIR, 'logs', 'dis_ae', RUN_ID)
@@ -51,7 +51,7 @@ class GanConfig:
         'loss': 'mse',
         'optimizer': 'adam',
         'batch_size': 256,
-        'epochs': 500,
+        'epochs': 200,
         'validation_split': 0.2,
         'callbacks': [gen_tensorboard_cb, early_stopping_cb],
     }
@@ -75,7 +75,7 @@ class GanConfig:
         'loss': 'mse',
         'optimizer': 'adam',
         'batch_size': 256,
-        'epochs': 500,
+        'epochs': 200,
         'validation_split': 0.2,
         'callbacks': [dis_tensorboard_cb, early_stopping_cb],
     }
