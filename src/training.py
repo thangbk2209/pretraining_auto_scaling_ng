@@ -127,8 +127,10 @@ def train_gan(generator, discriminator, X_gen, y_gen, X_dis, X_gen_test, y_gen_t
     y_gen_test_inv = data_obj.invert_transform(y_gen_test)
     y_gen_test_pred_inv = data_obj.invert_transform(y_gen_test_pred)
     test_loss_inv = rmse_func(y_gen_test_inv, y_gen_test_pred_inv)
+    print('training gan done, rmse after invert transform: {}'.format(test_loss_inv))
     plot_result(train_loss_list, test_loss_list, y_gen_test_inv, y_gen_test_pred_inv, test_loss_inv)
     return train_loss_list, test_loss_list
+
 
 def train():
     # save config.py
