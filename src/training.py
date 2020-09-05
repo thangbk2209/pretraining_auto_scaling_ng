@@ -158,15 +158,18 @@ def train():
     X_dis_train, _ = data_obj.create_dataset(input_timesteps=INPUT_TIMESTEPS + 1, data=data_obj.scale_data_train)
     X_dis_test, _ = data_obj.create_dataset(input_timesteps=INPUT_TIMESTEPS + 1, data=data_obj.scale_data_test)
 
-    # pre-training autoencoder for generator: gen_ae
-    gen_ae = build_train_autoencoder(CONFIG.GEN_AE, X_gen_train, X_gen_test)
-    gen_encoder = gen_ae.encoder
+    if LOAD_PRETRAINED_MODELS_FROM:
+        gen_encoder = tf.keras.models.load_model(os.path.join(LOAD_PRETRAINED_MODELS_FROM, 'gen_encoder.h5'))
+    else:
+        # pre-training autoencoder for generator: gen_ae
+        gen_ae = build_train_autoencoder(CONFIG.GEN_AE, X_gen_train, X_gen_test)
+        gen_encoder = gen_ae.encoder
     tf.keras.models.save_model(gen_encoder, os.path.join(MODELS_DIR, 'gen_encoder.h5'))
 
 
     # build generator
     gen_mlp_block = get_mlp_block(
-        (gen_ae.encoder.output_shape[1] + CONFIG.GAN['noise_size'],),
+        (gen_encoder.output_shape[1] + CONFIG.GAN['noise_size'],),
         CONFIG.GEN_MLP['layer_units'],
         CONFIG.GEN_MLP['dropout'],
         CONFIG.GEN_MLP['activation'],
@@ -176,14 +179,17 @@ def train():
     generator.summary()
     # tf.keras.utils.plot_model(generator, show_shapes=True, to_file='gen_test.png')
 
-    # pre-training autoencoder for discriminator: dis_ae
-    dis_ae = build_train_autoencoder(CONFIG.DIS_AE, X_dis_train, X_dis_test)
-    dis_encoder = dis_ae.encoder
+    if LOAD_PRETRAINED_MODELS_FROM:
+        dis_encoder = tf.keras.models.load_model(os.path.join(LOAD_PRETRAINED_MODELS_FROM, 'dis_encoder.h5'))
+    else:
+        # pre-training autoencoder for discriminator: dis_ae
+        dis_ae = build_train_autoencoder(CONFIG.DIS_AE, X_dis_train, X_dis_test)
+        dis_encoder = dis_ae.encoder
     tf.keras.models.save_model(dis_encoder, os.path.join(MODELS_DIR, 'dis_encoder.h5'))
 
     # build discriminator
     dis_mlp_block = get_mlp_block(
-        dis_ae.encoder.output_shape[1:],
+        dis_encoder.output_shape[1:],
         CONFIG.DIS_MLP['layer_units'],
         CONFIG.DIS_MLP['dropout'],
         CONFIG.DIS_MLP['activation'],
@@ -197,4 +203,5 @@ def train():
               CONFIG.GAN['noise_size'], data_obj)
 
     generator.save(os.path.join(MODELS_DIR, 'generator.h5'))
+    discriminator.save(os.path.join(MODELS_DIR, 'discriminator.h5'))
     print('model save to {}'.format(MODELS_DIR))
