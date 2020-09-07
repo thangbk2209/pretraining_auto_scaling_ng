@@ -30,8 +30,8 @@ early_stopping_cb = EarlyStopping(patience=20, restore_best_weights=True)
 class GanConfig:
     GAN = {
         'noise_size': 3,
-        'w_gan': 0.45,
-        'w_reg': 0.5,
+        'w_gan': 0.3,
+        'w_reg': 0.65,
         'w_direct': 0.05,
         'threshold': 0.08,
         'gen_optimizer': 'adam',  # or tf.keras.optimizers.Adam(learning_rate=0.001)
