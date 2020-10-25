@@ -86,3 +86,40 @@ class GanConfig:
         'activation': 'tanh',
         'last_activation': 'sigmoid'
     }
+
+    ACTIVATIONS = ['relu', 'sigmoid', 'tanh', 'elu']
+    # fix 1 layer LSTM
+    PSO = {
+        'fixed_config': {
+            'batch_size': 512,
+            'epochs': 1,
+            'gen_threshold': 0.1,
+            'prediction_times': 2
+        },
+        'pso_config': {
+            'max_iter': 2,
+            'step_save': 2,
+            'n_particles': 2
+        },
+        'domain': [
+            {'name': 'gen_input_timesteps', 'type': 'discrete', 'domain': [4, 32]},
+            {'name': 'gen_lstm_units', 'type': 'discrete', 'domain': [3, 10]}, # encode = 3 -> decode = 2^3 = 8
+            {'name': 'gen_lstm_dropout', 'type': 'continuous', 'domain': [0.0, 0.5]},
+            {'name': 'gen_lstm_recurrent_dropout', 'type': 'continuous', 'domain': [0.0, 0.5]},
+            {'name': 'gen_noise_shape', 'type': 'discrete', 'domain': [1, 10]},
+            {'name': 'gen_mlp_first_layer_units', 'type': 'discrete', 'domain': [3, 10]},  # encode = 5 -> [32, 16, 8, 4, 2, 1]
+            {'name': 'gen_mlp_dropout', 'type': 'continuous', 'domain': [0.0, 0.5]},
+            {'name': 'gen_mlp_idx_activation', 'type': 'discrete', 'domain': [0, 3]},
+            {'name': 'gen_w_gan', 'type': 'continuous', 'domain': [0.0, 1.0]},
+            {'name': 'gen_w_reg', 'type': 'continuous', 'domain': [0.0, 1.0]},
+            {'name': 'gen_w_direct', 'type': 'continuous', 'domain': [0.0, 1.0]},
+            # {'name': 'gen_threshold', 'type': 'continuous', 'domain': [0.0, 0.5]},
+            {'name': 'dis_lstm_units', 'type': 'discrete', 'domain': [3, 10]},  # encode = 3 -> decode = 2^3 = 8
+            {'name': 'dis_lstm_dropout', 'type': 'continuous', 'domain': [0.0, 0.5]},
+            {'name': 'dis_lstm_recurrent_dropout', 'type': 'continuous', 'domain': [0.0, 0.5]},
+            {'name': 'dis_mlp_first_layer_units', 'type': 'discrete', 'domain': [3, 10]},  # encode = 5 -> [32, 16, 8, 4, 2, 1]
+            {'name': 'dis_mlp_dropout', 'type': 'continuous', 'domain': [0.0, 0.5]},
+            {'name': 'dis_mlp_idx_activation', 'type': 'discrete', 'domain': [0, 3]}  # index, 0 -> relu,...
+        ]
+
+    }
