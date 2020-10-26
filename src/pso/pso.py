@@ -1,5 +1,8 @@
 import numpy as np
-from time import time
+import time
+import pickle
+from tensorflow.keras.models import save_model
+from config import *
 
 
 class Particle:
@@ -135,9 +138,15 @@ class Space:
             particle.velocity = v1 + v2 + v3
             particle.move()
 
-    # TODO: implement save_best_particle function
-    def save_best_particle(self):
-        return None
+    def save_best_particle(self, iteration, losses):
+        pso_results_dir = os.path.join(CORE_DATA_DIR, 'pso_results', RUN_ID)
+        if not os.path.exists(pso_results_dir):
+            os.mkdir(pso_results_dir)
+
+        with open(os.path.join(pso_results_dir, 'config_result-losses.pkl'), 'wb') as out_file:
+            pickle.dump(self.gbest_attribute, out_file)
+            pickle.dump(losses, out_file)
+        save_model(self.gbest_model, os.path.join(pso_results_dir, 'generator_iter{}'.format(iteration)))
 
     def search(self, max_iter, step_save=2):
         losses = []
@@ -145,15 +154,15 @@ class Space:
         for iteration in range(1, max_iter+1):
             self.w_old_velocity = self.max_w_old_velocity \
                                   - (iteration / max_iter) * (self.max_w_old_velocity - self.min_w_old_velocity)
-            start_time = time()
+            start_time = time.time()
             print('iteration: {}'.format(iteration))
 
             self.update_pbest_gbest()
             self.move_particles()
             losses.append(self.gbest_value)
-            print('best fitness: {}, time: {}'.format(self.gbest_value, time() - start_time))
+            print('best fitness: {}, time: {}'.format(self.gbest_value, time.time() - start_time))
             if iteration % step_save == 0:
-                self.save_best_particle()
+                self.save_best_particle(iteration, losses)
         self.save_best_particle()
         print('Best solution: iteration: {}, fitness: {}'.format(iteration, self.gbest_value))
         return self.gbest_particle
