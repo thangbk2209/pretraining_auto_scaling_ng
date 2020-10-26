@@ -92,7 +92,7 @@ class GanConfig:
     PSO = {
         'fixed_config': {
             'batch_size': 512,
-            'epochs': 1,
+            'epochs': 2,
             'gen_threshold': 0.1,
             'prediction_times': 2
         },

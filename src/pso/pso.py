@@ -114,7 +114,7 @@ class Space:
         fitness, model = self.fitness_fn(particle.decode_position())
         if fitness < particle.pbest_value:
             particle.pbest_position = particle.position
-            particle.pbest_value = particle.pbest_value
+            particle.pbest_value = fitness
             particle.pbest_model = model
             particle.pbest_attribute = particle.decode_position()
 
@@ -146,7 +146,7 @@ class Space:
         with open(os.path.join(pso_results_dir, 'config_result-losses.pkl'), 'wb') as out_file:
             pickle.dump(self.gbest_attribute, out_file)
             pickle.dump(losses, out_file)
-        save_model(self.gbest_model, os.path.join(pso_results_dir, 'generator_iter{}'.format(iteration)))
+        save_model(self.gbest_model, os.path.join(pso_results_dir, 'generator_iter{}.h5'.format(iteration)))
 
     def search(self, max_iter, step_save=2):
         losses = []
@@ -163,6 +163,6 @@ class Space:
             print('best fitness: {}, time: {}'.format(self.gbest_value, time.time() - start_time))
             if iteration % step_save == 0:
                 self.save_best_particle(iteration, losses)
-        self.save_best_particle()
+        self.save_best_particle(-1, losses)
         print('Best solution: iteration: {}, fitness: {}'.format(iteration, self.gbest_value))
         return self.gbest_particle

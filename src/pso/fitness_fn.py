@@ -81,8 +81,9 @@ def train(generator, discriminator, result_config):
 
     # get fixed config
     fixed_config = gan_config.PSO['fixed_config']
-    batch_size = fixed_config['epochs']
-    n_epochs = fixed_config['batch_size']
+    batch_size = fixed_config['batch_size']
+    n_epochs = fixed_config['epochs']
+
     noise_size = result_config['gen_noise_shape']
     num_samples = min(len(X_gen_train), len(X_dis_train))
     num_batches = ceil(num_samples / batch_size)
