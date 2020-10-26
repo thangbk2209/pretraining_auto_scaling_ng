@@ -97,7 +97,7 @@ class GanConfig:
             'prediction_times': 2
         },
         'pso_config': {
-            'max_iter': 2,
+            'max_iter': 4,
             'step_save': 2,
             'n_particles': 2
         },
