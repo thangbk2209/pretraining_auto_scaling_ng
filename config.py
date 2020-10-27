@@ -99,7 +99,9 @@ class GanConfig:
         'pso_config': {
             'max_iter': 4,
             'step_save': 2,
-            'n_particles': 2
+            'early_stopping': 10,
+            'n_particles': 2,
+            'multithreading': True
         },
         'domain': [
             {'name': 'gen_input_timesteps', 'type': 'discrete', 'domain': [4, 32]},

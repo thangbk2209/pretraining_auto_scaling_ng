@@ -162,7 +162,7 @@ class Space:
         #         particle.pbest_model = None
         #     pickle.dump(particles_copy, out_file)
 
-    def search(self, max_iter, step_save=2):
+    def search(self, max_iter, step_save=2, early_stopping=10, multithreading=True):
         losses = []
         iteration = None
         for iteration in range(1, max_iter+1):
@@ -171,12 +171,17 @@ class Space:
             start_time = time.time()
             print('iteration: {}'.format(iteration))
 
-            self.update_pbest_gbest(multithreading=False)
+            self.update_pbest_gbest(multithreading=multithreading)
             self.move_particles()
             losses.append(self.gbest_value)
             print('best fitness: {}, time: {}'.format(self.gbest_value, time.time() - start_time))
+
             if iteration % step_save == 0:
                 self.save_best_particle(iteration, losses)
+
+            if iteration > early_stopping:
+                if losses[-1] == losses[-early_stopping]:
+                    break
 
         self.save_best_particle(-1, losses)
         print('Best solution: iteration: {}, fitness: {}'.format(iteration, self.gbest_value))
