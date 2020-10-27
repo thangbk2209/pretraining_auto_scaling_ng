@@ -2,6 +2,8 @@ import numpy as np
 import time
 import pickle
 from tensorflow.keras.models import save_model
+import threading
+import copy
 from config import *
 
 
@@ -35,15 +37,6 @@ class Particle:
         for i, _type in enumerate(self.types):
             if _type == 'discrete':
                 result[self.names[i]] = int(round(position[i]))
-            else:
-                result[self.names[i]] = position[i]
-        return result
-
-    def decode_position_2(self, position):
-        result = {}
-        for i, _type in enumerate(self.types):
-            if _type == 'discrete':
-                result[self.names[i]] = int(position[i])
             else:
                 result[self.names[i]] = position[i]
         return result
@@ -118,9 +111,23 @@ class Space:
             particle.pbest_model = model
             particle.pbest_attribute = particle.decode_position()
 
-    def update_pbest_gbest(self):
-        for particle in self.particles:
-            self.evaluate_particle(particle)
+    def update_pbest_gbest(self, multithreading=True):
+        if multithreading:
+            print('multithreading Mode')
+            threads = []
+            for particle in self.particles:
+                _thread = threading.Thread(target=self.evaluate_particle, args=(particle,))
+                threads.append(_thread)
+
+            for thread in threads:
+                thread.start()
+
+            for thread in threads:
+                thread.join()
+        else:
+            print('Single thread')
+            for particle in self.particles:
+                self.evaluate_particle(particle)
 
         for particle in self.particles:
             if particle.pbest_value < self.gbest_value:
@@ -148,6 +155,13 @@ class Space:
             pickle.dump(losses, out_file)
         save_model(self.gbest_model, os.path.join(pso_results_dir, 'generator_iter{}.h5'.format(iteration)))
 
+        # pickle error when save tf model in particle
+        # with open(os.path.join(pso_results_dir, 'checkpoint_particles_iter{}'.format(iteration)), 'wb') as out_file:
+        #     particles_copy = copy.deepcopy(self.particles)
+        #     for particle in particles_copy:
+        #         particle.pbest_model = None
+        #     pickle.dump(particles_copy, out_file)
+
     def search(self, max_iter, step_save=2):
         losses = []
         iteration = None
@@ -157,12 +171,13 @@ class Space:
             start_time = time.time()
             print('iteration: {}'.format(iteration))
 
-            self.update_pbest_gbest()
+            self.update_pbest_gbest(multithreading=False)
             self.move_particles()
             losses.append(self.gbest_value)
             print('best fitness: {}, time: {}'.format(self.gbest_value, time.time() - start_time))
             if iteration % step_save == 0:
                 self.save_best_particle(iteration, losses)
+
         self.save_best_particle(-1, losses)
         print('Best solution: iteration: {}, fitness: {}'.format(iteration, self.gbest_value))
         return self.gbest_particle
