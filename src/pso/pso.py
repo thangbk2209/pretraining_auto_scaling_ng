@@ -4,6 +4,7 @@ import pickle
 from tensorflow.keras.models import save_model
 import threading
 import copy
+import multiprocessing
 from config import *
 
 
@@ -111,12 +112,29 @@ class Space:
             particle.pbest_model = model
             particle.pbest_attribute = particle.decode_position()
 
+    def _evaluate_particles(self, particles):
+        for particle in particles:
+            self.evaluate_particle(particle)
+
     def update_pbest_gbest(self, multithreading=True):
         if multithreading:
             print('multithreading Mode')
+
+            # split particles for threads
+            n_threads = int(multiprocessing.cpu_count() / 2)
+            if n_threads > self.n_particles:
+                n_threads = self.n_particles
+            n_particles_per_thread = int(self.n_particles / n_threads)
+
             threads = []
-            for particle in self.particles:
-                _thread = threading.Thread(target=self.evaluate_particle, args=(particle,))
+            for idx_thread in range(n_threads):
+                start = idx_thread * n_particles_per_thread
+                if idx_thread == n_threads - 1:
+                    end = n_threads
+                else:
+                    end = start + n_particles_per_thread
+                list_particles = self.particles[start:end]
+                _thread = threading.Thread(target=self._evaluate_particles, args=(list_particles,))
                 threads.append(_thread)
 
             for thread in threads:
