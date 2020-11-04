@@ -9,8 +9,8 @@ from config import *
 
 
 class Particle:
-    def __init__(self, types, mins, maxs, names, v_max):
-        self.v_max = v_max
+    def __init__(self, types, mins, maxs, names, v_maxs):
+        self.v_maxs = v_maxs  # np array: v_max of each particular dimensions
         self.types = types  # type of attribute: discrete, continuous
         self.mins = mins  # min value of domains
         self.maxs = maxs
@@ -18,7 +18,7 @@ class Particle:
 
         self.position = self.mins + (self.maxs - self.mins) * np.random.uniform(size=len(names))
         self.position = self._correct_position(self.position)
-        self.velocity = np.random.uniform(-1, 1, len(names))
+        self.velocity = v_maxs / 2 * np.random.uniform(-1, 1, size=len(names))
 
         self.pbest_position = self.position
         self.pbest_model = None
@@ -43,7 +43,7 @@ class Particle:
         return result
 
     def move(self):
-        self.velocity = np.clip(self.velocity, -self.v_max, self.v_max)
+        self.velocity = np.clip(self.velocity, -self.v_maxs, self.v_maxs)
         self.position = self.position + self.velocity
         self.position = self._correct_position(self.position)
         self.position = np.clip(self.position, self.mins, self.maxs)
@@ -57,14 +57,14 @@ class Particle:
 
 
 class Space:
-    def __init__(self, fitness_fn, domain, n_particles, v_max=float('inf'),
+    def __init__(self, fitness_fn, domain, n_particles,
                  max_w_old_velocity=0.9, min_w_old_velocity=0.4,
                  w_pbest=1.2, w_gbest=1.2):
         # domain: dictionary from config
         self.fitness_fn = fitness_fn
         self._parse_domain(domain)
         self.n_particles = n_particles
-        self.v_max = v_max
+        self.v_maxs = (self.maxs - self.mins) / 2
         self.particles = self.create_particles()
 
         self.gbest_value = float('inf')
@@ -100,7 +100,7 @@ class Space:
         particles = []
         for i in range(self.n_particles):
             particles.append(
-                Particle(self.types, self.mins, self.maxs, self.names, self.v_max)
+                Particle(self.types, self.mins, self.maxs, self.names, self.v_maxs)
             )
         return particles
 
@@ -168,7 +168,7 @@ class Space:
         if not os.path.exists(pso_results_dir):
             os.mkdir(pso_results_dir)
 
-        with open(os.path.join(pso_results_dir, 'config_result-losses.pkl'), 'wb') as out_file:
+        with open(os.path.join(pso_results_dir, 'config_result-losses_iter{}.pkl'.format(iteration)), 'wb') as out_file:
             pickle.dump(self.gbest_attribute, out_file)
             pickle.dump(losses, out_file)
         save_model(self.gbest_model, os.path.join(pso_results_dir, 'generator_iter{}.h5'.format(iteration)))
