@@ -92,15 +92,15 @@ class GanConfig:
     PSO = {
         'fixed_config': {
             'batch_size': 512,
-            'epochs': 2,
+            'epochs': 50,
             'gen_threshold': 0.1,
-            'prediction_times': 2
+            'prediction_times': 100
         },
         'pso_config': {
-            'max_iter': 4,
+            'max_iter': 100,
             'step_save': 2,
-            'early_stopping': 10,
-            'n_particles': 2,
+            'early_stopping': 15,
+            'n_particles': 50,
             'multithreading': True
         },
         'domain': [
