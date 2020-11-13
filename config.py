@@ -17,9 +17,9 @@ DATA_FILE = os.path.join(CORE_DATA_DIR, 'input_data', 'google_trace', '1_job', '
 DATA_COLUMN = 3
 DATA_HEADER = None
 SPLIT_RATIO = (0.8, 0.2)
-INPUT_TIMESTEPS = 32
-PREDICTION_TIMES_TRAIN = 50
-PREDICTION_TIMES_EVALUATE = 300
+INPUT_TIMESTEPS = 16
+PREDICTION_TIMES_TRAIN = 2
+PREDICTION_TIMES_EVALUATE = 2
 
 gen_tensorboard_cb = TensorBoard(GEN_AE_LOG_DIR)
 dis_tensorboard_cb = TensorBoard(DIS_AE_LOG_DIR)
@@ -28,7 +28,7 @@ early_stopping_cb = EarlyStopping(patience=20, restore_best_weights=True)
 
 class GanConfig:
     GAN = {
-        'noise_size': 4,
+        'noise_size': 1,
         'w_gan': 0.3,
         'w_reg': 0.5,
         'w_direct': 0.2,
@@ -36,7 +36,8 @@ class GanConfig:
         'gen_optimizer': 'adam',  # or tf.keras.optimizers.Adam(learning_rate=0.001)
         'dis_optimizer': 'adam',
         'batch_size': 512,
-        'epochs': 100
+        'epochs': 1,
+        'early_stopping': 15
     }
 
     GEN_AE = {
@@ -51,7 +52,7 @@ class GanConfig:
         'loss': 'mse',
         'optimizer': 'adam',
         'batch_size': 256,
-        'epochs': 200,
+        'epochs': 2,
         'validation_split': 0.2,
         'callbacks': [gen_tensorboard_cb, early_stopping_cb],
     }
@@ -75,7 +76,7 @@ class GanConfig:
         'loss': 'mse',
         'optimizer': 'adam',
         'batch_size': 256,
-        'epochs': 200,
+        'epochs': 2,
         'validation_split': 0.2,
         'callbacks': [dis_tensorboard_cb, early_stopping_cb],
     }

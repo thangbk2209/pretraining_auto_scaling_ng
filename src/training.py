@@ -66,6 +66,10 @@ def train_gan(generator, discriminator, X_gen, y_gen, X_dis, X_gen_test, y_gen_t
     n_epochs = CONFIG.GAN['epochs']
     y_gen_test_pred, test_loss = None, None
     rmse_func = lambda y_true, y_pred: np.sqrt(((y_true - y_pred) ** 2).mean())
+    best_test_loss = float('inf')
+    count_early_stopping = 0
+    y_gen_test_inv = data_obj.invert_transform(y_gen_test)
+    y_gen_train_inv = data_obj.invert_transform(y_gen)
     for epoch in range(n_epochs):
         for idx_batch in tf.range(num_batches):
             # data
@@ -97,25 +101,43 @@ def train_gan(generator, discriminator, X_gen, y_gen, X_dis, X_gen_test, y_gen_t
 
             gen_optimizer.apply_gradients(zip(gradients_of_gen, generator.trainable_variables))
             dis_optimizer.apply_gradients(zip(gradients_of_dis, discriminator.trainable_variables))
+
         # Evaluate:
-        y_gen_train_pred = np.stack(
-            [generator(
-                [X_gen, tf.random.normal(shape=(X_gen.shape[0], noise_size))],
-                training=False
-            ).numpy() for _ in range(PREDICTION_TIMES_TRAIN)]
-        ).mean(axis=0)
+        # y_gen_train_pred = np.stack(
+        #     [generator(
+        #         [X_gen, tf.random.normal(shape=(X_gen.shape[0], noise_size))],
+        #         training=False
+        #     ).numpy() for _ in range(PREDICTION_TIMES_TRAIN)]
+        # ).mean(axis=0)
         y_gen_test_pred = np.stack(
             [generator(
                 [X_gen_test, tf.random.normal(shape=(X_gen_test.shape[0], noise_size))],
                 training=False
             ).numpy() for _ in range(PREDICTION_TIMES_TRAIN)]
         ).mean(axis=0)
-        train_loss = rmse_func(y_gen, y_gen_train_pred)
-        test_loss = rmse_func(y_gen_test, y_gen_test_pred)
-        train_loss_list.append(train_loss)
-        test_loss_list.append(test_loss)
+
+        # invert data
+        y_gen_test_pred_inv = data_obj.invert_transform(y_gen_test_pred)
+        # train_loss = rmse_func(y_gen_train_inv, y_gen_train_pred)
+        test_loss = rmse_func(y_gen_test_inv, y_gen_test_pred_inv)
+        # train_loss_list.append(train_loss)
+
         # print loss:
-        print('Epoch {}/{}: rmse: train: {} - test: {} ------'.format(epoch + 1, n_epochs, train_loss, test_loss))
+        print('Epoch {}/{}: test: {} ------'.format(epoch + 1, n_epochs, test_loss))
+
+        test_loss_list.append(test_loss)
+        if test_loss < best_test_loss:
+            best_test_loss = test_loss
+            count_early_stopping = 0
+        else:
+            count_early_stopping += 1
+
+        # save_model
+        if epoch % 2 == 0:
+            tf.keras.models.save_model(generator, os.path.join(MODELS_DIR, 'generator_epoch{}_loss{:.3}.h5'.format(epoch, test_loss)))
+
+        if count_early_stopping > GanConfig.GAN['early_stopping']:
+            break
 
     # Evaluating
     y_gen_test_pred = np.stack(
@@ -124,12 +146,12 @@ def train_gan(generator, discriminator, X_gen, y_gen, X_dis, X_gen_test, y_gen_t
             training=False
         ).numpy() for _ in range(PREDICTION_TIMES_EVALUATE)]
     ).mean(axis=0)
-    y_gen_test_inv = data_obj.invert_transform(y_gen_test)
     y_gen_test_pred_inv = data_obj.invert_transform(y_gen_test_pred)
+    y_gen_test_inv = data_obj.invert_transform(y_gen_test)
     test_loss_inv = rmse_func(y_gen_test_inv, y_gen_test_pred_inv)
     print('training gan done, rmse after invert transform: {}'.format(test_loss_inv))
-    plot_result(train_loss_list, test_loss_list, y_gen_test_inv, y_gen_test_pred_inv, test_loss_inv)
-    return train_loss_list, test_loss_list
+    plot_result(test_loss_list, y_gen_test_inv, y_gen_test_pred_inv, test_loss_inv)
+    return test_loss_list
 
 
 def train():
@@ -196,5 +218,5 @@ def train():
     train_gan(generator, discriminator, X_gen_train, y_gen_train, X_dis_train, X_gen_test, y_gen_test,
               CONFIG.GAN['noise_size'], data_obj)
 
-    generator.save(os.path.join(MODELS_DIR, 'generator.h5'))
+    generator.save(os.path.join(MODELS_DIR, 'generator_final.h5'))
     print('model save to {}'.format(MODELS_DIR))

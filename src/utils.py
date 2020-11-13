@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from config import *
 
 
-def plot_result(train_loss_list, test_loss_list, y_true, y_pred, rmse_loss):
+def plot_result(test_loss_list, y_true, y_pred, rmse_loss):
     save_dir = os.path.join(PLOT_RESULT_DIR, RUN_ID)
     try:
         os.mkdir(save_dir)
@@ -11,10 +11,10 @@ def plot_result(train_loss_list, test_loss_list, y_true, y_pred, rmse_loss):
         return None
 
     # plot_hist
-    plt.plot(train_loss_list)
+    # plt.plot(train_loss_list)
     plt.plot(test_loss_list)
-    plt.title('Training loss, testing loss - Epoch')
-    plt.legend(['training loss', 'testing_loss'])
+    plt.title('testing loss - Epoch')
+    plt.legend(['testing_loss'])
     plt.savefig(os.path.join(save_dir, 'history'))
 
     # all
