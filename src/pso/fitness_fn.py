@@ -4,6 +4,7 @@ import tensorflow as tf
 from pandas import read_csv
 from math import ceil
 import numpy as np
+import multiprocessing
 
 from src.models.mlp import get_mlp_block
 from src.preprocessing import Data
@@ -105,7 +106,7 @@ def train(generator, discriminator, result_config):
 
     batch_size = fixed_config['batch_size']
     n_epochs = fixed_config['epochs']
-    prediction_time = fixed_config['prediction_times']
+    prediction_times = fixed_config['prediction_times']
     num_samples = min(len(X_gen_train_true), len(X_dis_train))
     num_batches = ceil(num_samples / batch_size)
 
@@ -113,6 +114,7 @@ def train(generator, discriminator, result_config):
     best_gen_validation = float('inf')
     best_gen_weights = None
     not_improve = 0
+    validation_error = 0
 
     # training
     for epoch in range(n_epochs):
@@ -147,9 +149,9 @@ def train(generator, discriminator, result_config):
             gen_optimizer.apply_gradients(zip(gradients_of_gen, generator.trainable_variables))
             dis_optimizer.apply_gradients(zip(gradients_of_dis, discriminator.trainable_variables))
 
-        # val_error = evaluate_model(generator, X_gen_val, y_gen_val)
-        if val_error < best_gen_validation:
-            best_gen_validation = val_error
+        validation_error, _ = evaluate_model(generator, X_gen_val, y_gen_val, noise_size, prediction_times)
+        if validation_error < best_gen_validation:
+            best_gen_validation = validation_error
             best_gen_weights = generator.get_weights()
             not_improve = 0
         else:
@@ -160,28 +162,30 @@ def train(generator, discriminator, result_config):
             break
 
     # Evaluating
-
-    y_gen_test_pred = np.stack(
-        [generator(
-            [X_gen_test, tf.random.normal(shape=(X_gen_test.shape[0], noise_size))],
-            training=False
-        ).numpy() for _ in range(predict_times)]
-    ).mean(axis=0)
+    _, y_gen_test_pred = evaluate_model(generator, X_gen_test, y_gen_test, noise_size, prediction_times)
     y_gen_test_inv = data_obj.invert_transform(y_gen_test)
     y_gen_test_pred_inv = data_obj.invert_transform(y_gen_test_pred)
-    test_loss_inv = rmse_func(y_gen_test_inv, y_gen_test_pred_inv)
+    test_error_inv = np.sqrt(mean_squared_func(y_gen_test_inv, y_gen_test_pred_inv))
     # print('training gan done, rmse after invert transform: {}'.format(test_loss_inv))
-    fitness_value = test_loss_inv
-    return fitness_value, generator
+
+    fitness_value = validation_error
+    return fitness_value, generator, test_error_inv
 
 
-def evaluate_model(model, X, y, noise_size, prediction_times=1):
-    def predict():
-        return model([X, tf.random.normal(shape=(X.shape[0], noise_size))], training=False).numpy()
-    
+def predict(args):
+    model, X, noise_size = args
+    return model([X, tf.random.normal(shape=(X.shape[0], noise_size))], training=False).numpy()
+
+
+def evaluate_model(model, X, y, noise_size, prediction_times):
     results = []
-    for i in range(prediction_times):
-        results.append(predict())
-    y_final = np.stack(results).mean(axis=0)
-    return mean_squared_func(y, y_final)
+    args = [(model, X, noise_size)] * prediction_times
+    results = multiprocessing.pool.ThreadPool().map(predict, args)
+    y_pred_final = np.stack(results).mean(axis=0)
+    return mean_squared_func(y, y_pred_final), y_pred_final
+
+
+def fitness_function(result_config):  # result config: config from pso search
+    generator, discriminator = build_model(result_config)
+    return train(generator, discriminator, result_config)
 

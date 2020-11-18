@@ -114,7 +114,7 @@ class GanConfig:
             {'name': 'gen_mlp_first_layer_units', 'type': 'discrete', 'domain': [3, 10]},  # encode = 5 -> [32, 16, 8, 4, 2, 1]
             {'name': 'gen_mlp_dropout', 'type': 'continuous', 'domain': [0.0, 0.5]},
             {'name': 'gen_mlp_idx_activation', 'type': 'discrete', 'domain': [0, 3]},
-            {'name': 'gen_w_gan', 'type': 'continuous', 'domain': [0.0, 1.0]},
+            {'name': 'gen_w_gan', 'type': 'continuous', 'domain': [0.2, 1.0]},
             {'name': 'gen_w_reg', 'type': 'continuous', 'domain': [0.0, 1.0]},
             {'name': 'gen_w_direct', 'type': 'continuous', 'domain': [0.0, 1.0]},
             # {'name': 'gen_threshold', 'type': 'continuous', 'domain': [0.0, 0.5]},

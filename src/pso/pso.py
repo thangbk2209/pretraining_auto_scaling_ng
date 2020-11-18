@@ -24,6 +24,7 @@ class Particle:
         self.pbest_model = None
         self.pbest_value = float('inf')
         self.pbest_attribute = None
+        self.pbest_test_error_inv = None
 
     def _correct_position(self, position):
         for i, _type in enumerate(self.types):
@@ -70,6 +71,7 @@ class Space:
         self.gbest_value = float('inf')
         self.gbest_model = None
         self.gbest_position = None
+        self.gbest_test_error_inv = None
         self.gbest_attribute = None
         self.gbest_particle = None
 
@@ -105,11 +107,12 @@ class Space:
         return particles
 
     def evaluate_particle(self, particle):
-        fitness, model = self.fitness_fn(particle.decode_position())
+        fitness, model, test_error_inv = self.fitness_fn(particle.decode_position())
         if fitness < particle.pbest_value:
             particle.pbest_position = particle.position
             particle.pbest_value = fitness
             particle.pbest_model = model
+            particle.pbest_test_error_inv = test_error_inv
             particle.pbest_attribute = particle.decode_position()
 
     def _evaluate_particles(self, particles):
@@ -117,31 +120,34 @@ class Space:
             self.evaluate_particle(particle)
 
     def update_pbest_gbest(self, multithreading=True):
+        # if multithreading:
+        #     print('multithreading Mode')
+        #
+        #     # split particles for threads
+        #     n_threads = int(multiprocessing.cpu_count() / 2)
+        #     if n_threads > self.n_particles:
+        #         n_threads = self.n_particles
+        #     n_particles_per_thread = int(self.n_particles / n_threads)
+        #
+        #     threads = []
+        #     for idx_thread in range(n_threads):
+        #         start = idx_thread * n_particles_per_thread
+        #         if idx_thread == n_threads - 1:
+        #             end = n_threads
+        #         else:
+        #             end = start + n_particles_per_thread
+        #         list_particles = self.particles[start:end]
+        #         _thread = threading.Thread(target=self._evaluate_particles, args=(list_particles,))
+        #         threads.append(_thread)
+        #
+        #     for thread in threads:
+        #         thread.start()
+        #
+        #     for thread in threads:
+        #         thread.join()
         if multithreading:
-            print('multithreading Mode')
-
-            # split particles for threads
-            n_threads = int(multiprocessing.cpu_count() / 2)
-            if n_threads > self.n_particles:
-                n_threads = self.n_particles
-            n_particles_per_thread = int(self.n_particles / n_threads)
-
-            threads = []
-            for idx_thread in range(n_threads):
-                start = idx_thread * n_particles_per_thread
-                if idx_thread == n_threads - 1:
-                    end = n_threads
-                else:
-                    end = start + n_particles_per_thread
-                list_particles = self.particles[start:end]
-                _thread = threading.Thread(target=self._evaluate_particles, args=(list_particles,))
-                threads.append(_thread)
-
-            for thread in threads:
-                thread.start()
-
-            for thread in threads:
-                thread.join()
+            print('multiprocessing.Pool Mode')
+            multiprocessing.Pool(os.cpu_count()).map(self.evaluate_particle, self.particles)
         else:
             print('Single thread')
             for particle in self.particles:
@@ -152,6 +158,7 @@ class Space:
                 self.gbest_value = particle.pbest_value
                 self.gbest_position = particle.pbest_position
                 self.gbest_model = particle.pbest_model
+                self.gbest_test_error_inv = particle.pbest_test_error_inv
                 self.gbest_attribute = particle.pbest_attribute
                 self.gbest_particle = particle
 
@@ -202,5 +209,6 @@ class Space:
                     break
 
         self.save_best_particle(-1, losses)
-        print('Best solution: iteration: {}, fitness: {}'.format(iteration, self.gbest_value))
+        print('Best solution: iteration: {}, fitness: {}, test_error_inv: {}'
+              .format(iteration, self.gbest_value, self.gbest_test_error_inv))
         return self.gbest_particle
