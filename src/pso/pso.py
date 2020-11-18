@@ -146,8 +146,8 @@ class Space:
         #     for thread in threads:
         #         thread.join()
         if multithreading:
-            print('multiprocessing.Pool Mode')
-            multiprocessing.Pool(os.cpu_count()).map(self.evaluate_particle, self.particles)
+            print('multiprocessing.pool.ThreadPool Mode')
+            multiprocessing.pool.ThreadPool().map(self.evaluate_particle, self.particles)
         else:
             print('Single thread')
             for particle in self.particles:
