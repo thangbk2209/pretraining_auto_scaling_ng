@@ -199,7 +199,8 @@ class Space:
             self.update_pbest_gbest(multithreading=multithreading)
             self.move_particles()
             losses.append(self.gbest_value)
-            print('best fitness: {}, time: {}'.format(self.gbest_value, time.time() - start_time))
+            print('best fitness: {}, test_error_inv: {}, time: {:.2} mins'
+                  .format(self.gbest_value, self.gbest_test_error_inv, (time.time() - start_time)/60))
 
             if iteration % step_save == 0:
                 self.save_best_particle(iteration, losses)

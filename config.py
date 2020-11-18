@@ -101,7 +101,7 @@ class GanConfig:
         'pso_config': {
             'max_iter': 4,
             'step_save': 2,
-            'early_stopping': 10,
+            'early_stopping': 500,
             'n_particles': 2,
             'multithreading': True
         },
