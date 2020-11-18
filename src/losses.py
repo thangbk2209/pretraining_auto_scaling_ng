@@ -20,7 +20,7 @@ def generator_direct_loss(X, y_gen_true, y_gen_pred):
 
 
 def generator_mse_regression_loss(y_gen_true, y_gen_pred):
-    return tf.reduce_mean(tf.square(y_gen_true - y_gen_pred))
+    return mean_squared_func(y_gen_true, y_gen_pred)
 
 
 def get_generator_loss_function(w_gan, w_reg, w_direct, threshold):
@@ -34,4 +34,8 @@ def get_generator_loss_function(w_gan, w_reg, w_direct, threshold):
             total_loss = w_gan*gan_loss + w_reg*reg_loss + w_direct*direct_loss
         return total_loss, gan_loss, reg_loss, direct_loss
     return loss_function
+
+
+def mean_squared_func(y_true, y_pred):
+    return tf.math.reduce_mean(tf.square(y_true - y_pred))
 

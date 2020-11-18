@@ -157,12 +157,11 @@ def train():
     y_gen_test = data_obj.y_test
     X_dis_train, _ = data_obj.create_dataset(input_timesteps=INPUT_TIMESTEPS + 1, data=data_obj.scale_data_train)
     X_dis_test, _ = data_obj.create_dataset(input_timesteps=INPUT_TIMESTEPS + 1, data=data_obj.scale_data_test)
-
+ 
     # pre-training autoencoder for generator: gen_ae
     gen_ae = build_train_autoencoder(CONFIG.GEN_AE, X_gen_train, X_gen_test)
     gen_encoder = gen_ae.encoder
     tf.keras.models.save_model(gen_encoder, os.path.join(MODELS_DIR, 'gen_encoder.h5'))
-
 
     # build generator
     gen_mlp_block = get_mlp_block(

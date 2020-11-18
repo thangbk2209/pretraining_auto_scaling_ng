@@ -7,7 +7,7 @@ import numpy as np
 
 from src.models.mlp import get_mlp_block
 from src.preprocessing import Data
-from src.losses import get_generator_loss_function, discriminator_loss
+from src.losses import get_generator_loss_function, discriminator_loss, mean_squared_func
 from config import *
 
 gan_config = GanConfig()
@@ -81,12 +81,8 @@ def train(generator, discriminator, result_config):
 
     # get fixed config
     fixed_config = gan_config.PSO['fixed_config']
-    batch_size = fixed_config['batch_size']
-    n_epochs = fixed_config['epochs']
 
     noise_size = result_config['gen_noise_shape']
-    num_samples = min(len(X_gen_train), len(X_dis_train))
-    num_batches = ceil(num_samples / batch_size)
 
     # get optimizer
     gen_optimizer = tf.optimizers.get('adam')
@@ -99,7 +95,24 @@ def train(generator, discriminator, result_config):
     threshold = fixed_config['gen_threshold']
     generator_loss_fn = get_generator_loss_function(w_gan, w_reg, w_direct, threshold)
 
-    rmse_func = lambda y_true, y_pred: np.sqrt(((y_true - y_pred) ** 2).mean())
+    # split train-validation
+    validation_split = fixed_config['validation_split']
+    n_trains = int(X_gen_train.shape[0] * (1 - validation_split))
+    X_gen_train_true = X_gen_train[:n_trains]
+    y_gen_train_true = y_gen_train[:n_trains]
+    X_gen_val = X_gen_train[n_trains:]
+    y_gen_val = y_gen_train[n_trains:]
+
+    batch_size = fixed_config['batch_size']
+    n_epochs = fixed_config['epochs']
+    prediction_time = fixed_config['prediction_times']
+    num_samples = min(len(X_gen_train_true), len(X_dis_train))
+    num_batches = ceil(num_samples / batch_size)
+
+    early_stopping = fixed_config['early_stopping']
+    best_gen_validation = float('inf')
+    best_gen_weights = None
+    not_improve = 0
 
     # training
     for epoch in range(n_epochs):
@@ -109,8 +122,8 @@ def train(generator, discriminator, result_config):
             idx_end = idx_start + batch_size
             if idx_end > num_samples:
                 idx_end = num_samples
-            X_gen_batch = X_gen_train[idx_start:idx_end]
-            y_gen_batch = y_gen_train[idx_start:idx_end]
+            X_gen_batch = X_gen_train_true[idx_start:idx_end]
+            y_gen_batch = y_gen_train_true[idx_start:idx_end]
             X_dis_batch = X_dis_train[idx_start:idx_end]
 
             # feed forward
@@ -134,8 +147,20 @@ def train(generator, discriminator, result_config):
             gen_optimizer.apply_gradients(zip(gradients_of_gen, generator.trainable_variables))
             dis_optimizer.apply_gradients(zip(gradients_of_dis, discriminator.trainable_variables))
 
+        # val_error = evaluate_model(generator, X_gen_val, y_gen_val)
+        if val_error < best_gen_validation:
+            best_gen_validation = val_error
+            best_gen_weights = generator.get_weights()
+            not_improve = 0
+        else:
+            not_improve += 1
+
+        if not_improve > early_stopping:
+            generator.set_weights(best_gen_weights)
+            break
+
     # Evaluating
-    predict_times = fixed_config['prediction_times']
+
     y_gen_test_pred = np.stack(
         [generator(
             [X_gen_test, tf.random.normal(shape=(X_gen_test.shape[0], noise_size))],
@@ -150,7 +175,15 @@ def train(generator, discriminator, result_config):
     return fitness_value, generator
 
 
-def fitness_function(result_config):  # result config: config from pso search
-    generator, discriminator = build_model(result_config)
-    return train(generator, discriminator, result_config)
+def evaluate_model(model, X, y, noise_size, prediction_times=1):
+    def predict():
+        return model([X, tf.random.normal(shape=(X.shape[0], noise_size))], training=False).numpy()
 
+    results = []
+    for i in range(prediction_times):
+        
+        results.append(y_tmp_pred)
+    y_final = np.stack(results).mean(axis=0)
+    return mean_squared_func(y, y_final)
+
+from multiprocessing.pool import ThreadPool

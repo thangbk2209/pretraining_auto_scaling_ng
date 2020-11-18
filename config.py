@@ -94,7 +94,9 @@ class GanConfig:
             'batch_size': 512,
             'epochs': 2,
             'gen_threshold': 0.1,
-            'prediction_times': 2
+            'prediction_times': 2,
+            'early_stopping': 2,
+            'validation_split': 0.2
         },
         'pso_config': {
             'max_iter': 4,
