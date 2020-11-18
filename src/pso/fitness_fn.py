@@ -178,12 +178,10 @@ def train(generator, discriminator, result_config):
 def evaluate_model(model, X, y, noise_size, prediction_times=1):
     def predict():
         return model([X, tf.random.normal(shape=(X.shape[0], noise_size))], training=False).numpy()
-
+    
     results = []
     for i in range(prediction_times):
-        
-        results.append(y_tmp_pred)
+        results.append(predict())
     y_final = np.stack(results).mean(axis=0)
     return mean_squared_func(y, y_final)
 
-from multiprocessing.pool import ThreadPool
