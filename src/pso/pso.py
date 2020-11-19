@@ -120,34 +120,34 @@ class Space:
             self.evaluate_particle(particle)
 
     def update_pbest_gbest(self, multithreading=True):
-        # if multithreading:
-        #     print('multithreading Mode')
-        #
-        #     # split particles for threads
-        #     n_threads = int(multiprocessing.cpu_count() / 2)
-        #     if n_threads > self.n_particles:
-        #         n_threads = self.n_particles
-        #     n_particles_per_thread = int(self.n_particles / n_threads)
-        #
-        #     threads = []
-        #     for idx_thread in range(n_threads):
-        #         start = idx_thread * n_particles_per_thread
-        #         if idx_thread == n_threads - 1:
-        #             end = n_threads
-        #         else:
-        #             end = start + n_particles_per_thread
-        #         list_particles = self.particles[start:end]
-        #         _thread = threading.Thread(target=self._evaluate_particles, args=(list_particles,))
-        #         threads.append(_thread)
-        #
-        #     for thread in threads:
-        #         thread.start()
-        #
-        #     for thread in threads:
-        #         thread.join()
         if multithreading:
-            print('multiprocessing.pool.ThreadPool Mode')
-            multiprocessing.pool.ThreadPool().map(self.evaluate_particle, self.particles)
+            print('multithreading Mode')
+
+            # split particles for threads
+            n_threads = int(multiprocessing.cpu_count() / 2)
+            if n_threads > self.n_particles:
+                n_threads = self.n_particles
+            n_particles_per_thread = int(self.n_particles / n_threads)
+
+            threads = []
+            for idx_thread in range(n_threads):
+                start = idx_thread * n_particles_per_thread
+                if idx_thread == n_threads - 1:
+                    end = n_threads
+                else:
+                    end = start + n_particles_per_thread
+                list_particles = self.particles[start:end]
+                _thread = threading.Thread(target=self._evaluate_particles, args=(list_particles,))
+                threads.append(_thread)
+
+            for thread in threads:
+                thread.start()
+
+            for thread in threads:
+                thread.join()
+        # if multithreading:
+        #     print('multiprocessing.pool.ThreadPool Mode')
+        #     multiprocessing.pool.ThreadPool().map(self.evaluate_particle, self.particles)
         else:
             print('Single thread')
             for particle in self.particles:
