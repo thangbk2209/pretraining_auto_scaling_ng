@@ -179,8 +179,10 @@ def predict(args):
 
 def evaluate_model(model, X, y, noise_size, prediction_times):
     results = []
-    args = [(model, X, noise_size)] * prediction_times
-    results = multiprocessing.pool.ThreadPool().map(predict, args)
+    # args = [(model, X, noise_size)] * prediction_times
+    # results = multiprocessing.pool.ThreadPool().map(predict, args)
+    for i in range(prediction_times):
+        results.append(predict(model, X, noise_size))
     y_pred_final = np.stack(results).mean(axis=0)
     return mean_squared_func(y, y_pred_final), y_pred_final
 
