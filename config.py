@@ -93,7 +93,7 @@ class GanConfig:
         'fixed_config': {
             'batch_size': 512,
             'epochs': 2,
-            'gen_threshold': 0.1,
+            # 'gen_threshold': 0.1,
             'prediction_times': 2,
             'early_stopping': 2,
             'validation_split': 0.2
@@ -117,7 +117,7 @@ class GanConfig:
             {'name': 'gen_w_gan', 'type': 'continuous', 'domain': [0.2, 1.0]},
             {'name': 'gen_w_reg', 'type': 'continuous', 'domain': [0.0, 1.0]},
             {'name': 'gen_w_direct', 'type': 'continuous', 'domain': [0.0, 1.0]},
-            # {'name': 'gen_threshold', 'type': 'continuous', 'domain': [0.0, 0.5]},
+            {'name': 'gen_threshold', 'type': 'continuous', 'domain': [0.0, 0.03]},
             {'name': 'dis_lstm_units', 'type': 'discrete', 'domain': [3, 10]},  # encode = 3 -> decode = 2^3 = 8
             {'name': 'dis_lstm_dropout', 'type': 'continuous', 'domain': [0.0, 0.5]},
             {'name': 'dis_lstm_recurrent_dropout', 'type': 'continuous', 'domain': [0.0, 0.5]},

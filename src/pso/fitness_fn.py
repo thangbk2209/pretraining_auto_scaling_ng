@@ -93,7 +93,7 @@ def train(generator, discriminator, result_config):
     w_gan = result_config['gen_w_gan']
     w_reg = result_config['gen_w_reg']
     w_direct = result_config['gen_w_direct']
-    threshold = fixed_config['gen_threshold']
+    threshold = result_config['gen_threshold']
     generator_loss_fn = get_generator_loss_function(w_gan, w_reg, w_direct, threshold)
 
     # split train-validation
